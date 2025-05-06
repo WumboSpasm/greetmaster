@@ -1,0 +1,10 @@
+.greetmaster-content {
+	scrollbar-gutter: stable;
+	display: flex;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	justify-content: center;
+}
+#greetmaster-thumbnail {
+	line-height: 0;
+}

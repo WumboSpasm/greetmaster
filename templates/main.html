@@ -1,0 +1,47 @@
+<html>
+	<head>
+		<title>{TITLE}</title>
+		<link rel="stylesheet" href="/main.css">
+        <link rel="stylesheet" href="/{NAMESPACE}.css">
+		<script>
+			const params = new URL(location.href).searchParams;
+			const filterParams = (() => {
+				const validFilters = ["search", "title", "category", "source", "type", "date"];
+				const paramKeys = [...params.keys()];
+				const paramValues = [...params.values()];
+				const filters = paramKeys
+					.map((paramKey, i) => [paramKey, paramValues[i]])
+					.filter(param => param[1] != "" && validFilters.some(validFilter => param[0] == validFilter))
+					.slice(0, 16);
+				const filterParams = new URLSearchParams();
+				for (const filter of filters)
+					filterParams.append(...filter);
+				return filterParams;
+			})();
+			const filterParamsString = filterParams.toString();
+		</script>
+		<script src="/main.js"></script>
+        <script src="/{NAMESPACE}.js" type="module"></script>
+{STYLE}
+	</head>
+	<body>
+		<div class="greetmaster-header">
+			<div class="greetmaster-sidebar-button"></div>
+			<div class="greetmaster-header-link greetmaster-logo"><a href="/">Greetmaster</a></div>
+			<div class="greetmaster-search-container">
+				<form class="greetmaster-search-form" action="/" method="get">
+					<input class="greetmaster-search-box" type="text" name="search" value="{SEARCH}" placeholder="Search e-cards...">
+					<input class="greetmaster-search-submit" type="submit" value="Go">
+				</form>
+			</div>
+			<div class="greetmaster-header-spacer"></div>
+			<!--div class="greetmaster-header-link greetmaster-about"><a href="/about">About</a></div-->
+		</div>
+		<div class="greetmaster-content-container">
+			<div class="greetmaster-sidebar"></div>
+			<div class="greetmaster-content">
+{CONTENT}
+			</div>
+		</div>
+	</body>
+</html>
