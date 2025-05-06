@@ -55,7 +55,7 @@ const supportedTypes = [
 	"creataMailTemplate",
 	//"creataMailClipArt",
 	//"creataMailIcon",
-	"creataMailAudio",
+	//"creataMailAudio",
 	//"createPrintCard",
 ];
 
