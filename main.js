@@ -6,8 +6,8 @@ import { stringifyEntities } from "https://esm.sh/stringify-entities@4.0.4";
 const config = {
 	httpPort: 8991,
 	httpsPort: 8992,
-	httpsCert: "",
-	httpsKey: "",
+	httpsCert: null,
+	httpsKey: null,
 	accessHosts: [],
 	greetingIndex: "greetings.json",
 	filesystemIndex: "files.json",
@@ -293,13 +293,14 @@ const serverError = (error) => {
 	return new Response(errorPage, { status: error.status ?? 500, headers: { "Content-Type": "text/html; charset=UTF-8" } });
 };
 
-// Start server on HTTP and (if configured) HTTPS
-Deno.serve({
-	port: config.httpPort,
-	hostname: config.hostName,
-	onError: serverError,
-}, serverHandler);
-if (config.httpsCert && config.httpsKey)
+// Start server on HTTP and/or HTTPS
+if (config.httpPort)
+	Deno.serve({
+		port: config.httpPort,
+		hostname: config.hostName,
+		onError: serverError,
+	}, serverHandler);
+if (config.httpsPort && config.httpsCert && config.httpsKey)
 	Deno.serve({
 		port: config.httpsPort,
 		cert: Deno.readTextFileSync(config.httpsCert),
