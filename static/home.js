@@ -35,8 +35,7 @@ function loadThumbs(thumbRemainder, doDisplayThumbs) {
 			link.id = "greetmaster-thumbnail";
 			link.setAttribute("href", `/?id=${id}`);
 			const thumb = document.createElement("img");
-			thumb.dataset.src = `/data/${greetings[id].thumbnail || "thumbs/nothumb.gif"}`;
-			//thumb.dataset.src = greetings[id].thumbnail != "" ? `/data/thumbs/${Math.floor(id / 1000)}/${id}.webp` : "/data/thumbs/nothumb.webp";
+			thumb.dataset.src = greetings[id].thumbnail != "" ? `/data/thumbs/${Math.floor(id / 1000)}/${id}.webp` : "/data/thumbs/nothumb.webp";
 			thumb.src = defaultSrc;
 			thumb.setAttribute("width", thumbWidth);
 			thumb.setAttribute("height", thumbHeight);
