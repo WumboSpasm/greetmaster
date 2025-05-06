@@ -60,7 +60,6 @@ const supportedTypes = [
 ];
 
 const fields = ["titles", "categories", "sources", "type", "thumbnail", "files"];
-const fileFields = ["size", "timestamp", "mimeType", "encoding", "width", "height", "protected", "sha256"];
 
 const filters = {
 	"search": (greeting, value) => greeting.titles.concat(greeting.categories).some(entry => entry.toLowerCase().replace("<br>", " ").includes(value.toLowerCase())),
@@ -192,20 +191,6 @@ const serverHandler = async (request, info) => {
 				}
 			}
 			return new Response(JSON.stringify(greetingList), { headers: { "Content-Type": "application/json; charset=UTF-8" } });
-		}
-		case "files": {
-			const fileList = {};
-			const greeting = greetings[params.get("id")];
-			if (validGreeting(greeting)) {
-				let requestFields = params.getAll("field").filter(field => fileFields.some(validField => field == validField));
-				if (requestFields.length == 0) requestFields = fileFields;
-				for (const path of greeting.files) {
-					fileList[path] = {};
-					for (const field of requestFields)
-						fileList[path][field] = filesystem[path][field];
-				}
-			}
-			return new Response(JSON.stringify(fileList), { headers: { "Content-Type": "application/json; charset=UTF-8" } });
 		}
 		case "stats": {
 			const statsList = { total: -1 };
