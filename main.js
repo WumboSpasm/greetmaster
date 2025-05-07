@@ -41,24 +41,25 @@ logMessage(`loaded greeting index: ${await Deno.realPath(config.greetingIndex)}`
 const filesystem = JSON.parse(await Deno.readTextFile(config.filesystemIndex));
 logMessage(`loaded filesystem index: ${await Deno.realPath(config.filesystemIndex)}`);
 
-const supportedTypes = [
-	"flashEcard",
-	"htmlEcard",
-	"animatedTextEcard",
-	"photoVideoEcard",
-	"imageEcard",
-	"downloadableEcard",
-	"javaEcard",
-	"shockwaveEcard",
-	//"wallpaper",
-	"wallpaperPreview",
-	"screensaverPreview",
-	"creataMailTemplate",
-	//"creataMailClipArt",
-	//"creataMailIcon",
-	//"creataMailAudio",
-	//"createPrintCard",
-];
+const typeMap = {
+	"flashEcard":			"Flash E-Card",
+	"htmlEcard":			"HTML E-Card",
+	"animatedTextEcard":	"Animated Text E-Card",
+	"photoVideoEcard":		"Photo/Video E-Card",
+	"imageEcard":			"Image E-Card",
+	"downloadableEcard":	"Downloadable E-Card",
+	"javaEcard":			"Java E-Card",
+	"shockwaveEcard":		"Shockwave E-Card",
+	//"wallpaper":			"Wallpaper",
+	"wallpaperPreview":		"Wallpaper Preview",
+	"screensaverPreview":	"Screensaver Preview",
+	"creataMailTemplate":	"CreataMail Template",
+	//"creataMailClipArt":	"CreataMail Clip Art",
+	//"creataMailIcon":		"CreataMail Icon",
+	//"creataMailAudio":	"CreataMail Audio",
+	//"createPrintCard":	"Create & Print Card",
+};
+const supportedTypes = Object.keys(typeMap);
 
 const fields = ["titles", "categories", "sources", "type", "thumbnail", "files"];
 
@@ -100,7 +101,8 @@ const serverHandler = async (request, info) => {
 			if (params.has("id")) {
 				const greeting = greetings[params.get("id")];
 				if (!validGreeting(greeting)) throw new BadRequestError();
-				pageTitle = greeting.titles.length > 0 ? greeting.titles[0].replace(/<br>/i, " ") : "Unknown Title";
+				pageTitle = `${typeMap[greeting.type]} at Greetmaster`;
+				if (greeting.titles.length > 0) pageTitle = `${greeting.titles[0].replace(/<br>/i, " ")} - ${pageTitle}`;
 				pageNamespace = "greeting";
 				let greetingPath;
 				let greetingStyle = "";
