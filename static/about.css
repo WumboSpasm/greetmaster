@@ -1,0 +1,37 @@
+body {
+	background-color: #000000;
+	font-family: Verdana, sans-serif;
+	font-size: 14px;
+	margin: 0;
+}
+body, a {
+	color: #ffffff;
+}
+.greetmaster-about-logo {
+	height: 48px;
+	background-color: #974242;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.greetmaster-about-logo a {
+	font-family: "Times New Roman", serif;
+	font-size: 32px;
+	padding: 0 6px 2px;
+	text-decoration: none;
+}
+.greetmaster-about-logo a:hover {
+	text-decoration: underline;
+}
+.greetmaster-about-container {
+	width: 640px;
+	margin: 0 auto;
+	padding: 16px 0;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+.greetmaster-about-container ul {
+	margin: 0;
+	padding-left: 24px;
+}

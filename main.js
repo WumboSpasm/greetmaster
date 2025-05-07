@@ -19,6 +19,7 @@ const config = {
 const templates = {
 	main:		getTemplate("main.html"),
 	greeting:	getTemplate("greeting.html"),
+	about:		getTemplate("about.html"),
 	error:		getTemplate("error.html"),
 };
 
@@ -251,6 +252,9 @@ const serverHandler = async (request, info) => {
 				statsList[field] = Object.fromEntries(Object.entries(statsList[field]).toSorted(([,a], [,b]) => b - a));
 			}
 			return new Response(JSON.stringify(statsList), { headers: { "Content-Type": "application/json; charset=UTF-8" } });
+		}
+		case "about": {
+			return new Response(templates.about, { headers: { "Content-Type": "text/html; charset=UTF-8" } });
 		}
 		default: {
 			if (!requestPath.startsWith("data/")) requestPath = `static/${requestPath}`;
