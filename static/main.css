@@ -15,7 +15,7 @@
 }
 body {
 	width: 100vw;
-    height: 100vh;
+	height: 100vh;
 	background-color: var(--greetmaster-background-color-4);
 	color: var(--greetmaster-text-color);
 	font-family: Verdana, sans-serif;
