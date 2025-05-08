@@ -255,6 +255,17 @@ const serverHandler = async (request, info) => {
 			}
 			return new Response(JSON.stringify(statsList), { headers: { "Content-Type": "application/json; charset=UTF-8" } });
 		}
+		case "random": {
+			const randomList = [];
+			const requestFilters = getRequestFilters(params);
+			for (const id in greetings) {
+				const greeting = greetings[id];
+				if (validGreeting(greeting) && requestFilters.every(([key, value]) => filters[key](greeting, value)))
+					randomList.push(id);
+			}
+			const randomId = randomList[Math.floor(Math.random() * randomList.length)];
+			return Response.redirect(`${requestUrl.origin}/?id=${randomId}`);
+		}
 		case "about": {
 			return new Response(templates.about, { headers: { "Content-Type": "text/html; charset=UTF-8" } });
 		}
