@@ -85,14 +85,20 @@ async function prepareEmu(greetingContent, greetingOverlay) {
 		loadScript("/emu/zip-fs-full.min.js"),
 	]);
 	const emuPlaceholder = greetingContent.querySelector("#greetmaster-emu-placeholder");
+	const shockwave = greetingContent.dataset.type == "shockwaveEcard";
+	const [systemFiles, greetingFile, projectorFile] = await Promise.all([
+		fetch("/emu/win31.zip"),
+		fetch(emuPlaceholder.dataset.src),
+		shockwave ? fetch("/emu/projector.exe") : Promise.resolve()
+	]);
 	const zipData = new zip.fs.FS();
-	await zipData.importHttpContent("/emu/win31.zip");
-	if (greetingContent.dataset.type == "shockwaveEcard") {
-		await zipData.addHttpContent("files/app.exe", "/emu/projector.exe");
-		await zipData.addHttpContent("files/movie.dcr", emuPlaceholder.dataset.src);
+	await zipData.importBlob(await systemFiles.blob());
+	if (shockwave) {
+		await zipData.addBlob("files/app.exe", await projectorFile.blob());
+		await zipData.addBlob("files/movie.dcr", await greetingFile.blob());
 	}
 	else
-		await zipData.addHttpContent("files/app.exe", emuPlaceholder.dataset.src);
+		await zipData.addBlob("files/app.exe", await greetingFile.blob());
 	const zipUrl = URL.createObjectURL(await zipData.exportBlob());
 	greetingOverlay.addEventListener("click", () => {
 		Dos(emuPlaceholder, {
