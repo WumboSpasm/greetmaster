@@ -80,6 +80,7 @@
 }
 #greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="creataMailTemplate"] {
 	min-height: 480px;
+	overflow: hidden;
 }
 #greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="creataMailTemplate"] > div {
 	z-index: 0;
