@@ -51,11 +51,16 @@
 	padding: 4px 6px;
 }
 .greetmaster-greeting-footer-button {
+	color: #fff;
+	text-decoration: none;
 	user-select: none;
 }
 .greetmaster-greeting-footer-button:hover {
 	text-decoration: underline;
 	cursor: pointer;
+}
+.greetmaster-greeting-footer-section {
+	color: #fffd;
 }
 .greetmaster-greeting-footer-spacer {
 	flex-grow: 1;
