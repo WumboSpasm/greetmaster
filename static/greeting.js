@@ -30,12 +30,13 @@ async function prepareMidi(greetingContent, greetingOverlay) {
 	const midiPlaceholder = greetingContent.querySelector("#greetmaster-midi-placeholder");
 	if (midiPlaceholder === null) return;
 	const spessasynth = await import("./midi/spessasynth_lib.min.js");
-	const soundfont = await (await fetch("./midi/gm.sf2")).arrayBuffer();
+	const soundfont = await (await fetch("./midi/gm.dls")).arrayBuffer();
 	const midi = await (await fetch(midiPlaceholder.dataset.src)).arrayBuffer();
 	const audioContext = new AudioContext();
 	await audioContext.audioWorklet.addModule("./midi/worklet_processor.min.js");
 	greetingOverlay.addEventListener("click", () => {
 		const synthesizer = new spessasynth.Synthetizer(audioContext.destination, soundfont);
+		synthesizer.setMainVolume(2);
 		synthesizer.setEffectsGain(0, 0);
 		const sequencer = new spessasynth.Sequencer([{ binary: midi }], synthesizer, { autoPlay: false });
 		const midiLoop = parseInt(midiPlaceholder.dataset.loop);
