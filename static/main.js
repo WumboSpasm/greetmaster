@@ -17,14 +17,31 @@ const typeMap = {
 	"createPrintCard":		"Create & Print Card",
 };
 
-// filter, stat, display name, unlisted
 const fieldMap = [
+//	filter			stat			display name		unlisted?
 	["search",		"search",		"Search Query",		true],
 	["title",		"titles",		"Titles",			true],
 	["type",		"types",		"Types",			false],
 	["category",	"categories",	"Categories",		false],
 	["source",		"sources",		"Sources",			false],
 ];
+
+// These variables will be accessed by other scripts
+const params = new URL(location.href).searchParams;
+const filterParams = (() => {
+	const validFilters = ["search", "title", "category", "source", "type", "date"];
+	const paramKeys = [...params.keys()];
+	const paramValues = [...params.values()];
+	const filters = paramKeys
+		.map((paramKey, i) => [paramKey, paramValues[i]])
+		.filter(param => param[1] != "" && validFilters.some(validFilter => param[0] == validFilter))
+		.slice(0, 16);
+	const filterParams = new URLSearchParams();
+	for (const filter of filters)
+		filterParams.append(...filter);
+	return filterParams;
+})();
+const filterParamsString = filterParams.toString();
 
 const pageExpandIcon = "var(--greetmaster-expand-icon)";
 const pageCollapseIcon = "var(--greetmaster-collapse-icon)";
