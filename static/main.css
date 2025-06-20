@@ -128,9 +128,6 @@ a.greetmaster-sidebar-entry {
 	color: var(--greetmaster-text-color);
 	text-decoration: none;
 }
-.greetmaster-sidebar-entry-left {
-	flex-grow: 1;
-}
 .greetmaster-stat-header,
 .greetmaster-stat-entry:hover {
 	background-color: var(--greetmaster-background-color-2);
@@ -143,6 +140,8 @@ a.greetmaster-sidebar-entry {
 }
 .greetmaster-sidebar-entry-left {
 	overflow-wrap: anywhere;
+	white-space: pre-line;
+	flex-grow: 1;
 }
 .greetmaster-sidebar-entry-right {
 	margin-left: 8px;
