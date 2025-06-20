@@ -95,6 +95,7 @@ const serverHandler = async (request, info) => {
 		case "": {
 			let page = templates.main;
 			let pageTitle = "Greetmaster";
+			let pageNoindex = "";
 			let pageStyle = "";
 			let pageNamespace = "";
 			let pageContent = "";
@@ -180,12 +181,15 @@ const serverHandler = async (request, info) => {
 					.replace("{BODY}",  greetingBody)
 					.replace("{LINKS}", greetingLinks);
 			}
-			else
+			else {
 				pageNamespace = "home";
+				if (params.toString() != "") pageNoindex = `\t\t<meta name="robots" content="noindex">`;
+			}
 			const pageSearch = stringifyEntities((params.get("search") ?? "").substring(0, 64), { escapeOnly: true });
 			page = page
 				.replaceAll("{NAMESPACE}", pageNamespace)
 				.replace("{TITLE}", pageTitle)
+				.replace("{NOINDEX}", pageNoindex)
 				.replace("{STYLE}", pageStyle)
 				.replace("{CONTENT}", pageContent)
 				.replace("{SEARCH}", pageSearch);
