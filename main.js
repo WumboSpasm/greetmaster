@@ -17,10 +17,12 @@ const config = {
 
 // Define templates
 const templates = {
-	main:		getTemplate("main.html"),
-	greeting:	getTemplate("greeting.html"),
-	about:		getTemplate("about.html"),
-	error:		getTemplate("error.html"),
+	main:			getTemplate("main.html"),
+	mainEmbed:		getTemplate("main_embed.html"),
+	greeting:		getTemplate("greeting.html"),
+	greetingEmbed:	getTemplate("greeting_embed.html"),
+	about:			getTemplate("about.html"),
+	error:			getTemplate("error.html"),
 };
 
 // Define command-line flags and their default values
@@ -93,7 +95,8 @@ const serverHandler = async (request, info) => {
 
 	switch (requestPath) {
 		case "": {
-			let page = templates.main;
+			const embed = params.get("embed") == "true";
+			let page = embed ? templates.mainEmbed : templates.main;
 			let pageTitle = "Greetmaster";
 			let pageNoindex = "";
 			let pageStyle = "";
@@ -103,7 +106,7 @@ const serverHandler = async (request, info) => {
 				const greeting = greetings[params.get("id")];
 				if (!validGreeting(greeting)) throw new BadRequestError();
 				pageTitle = `${typeMap[greeting.type]} at Greetmaster`;
-				if (greeting.titles.length > 0) pageTitle = `${greeting.titles[0].replace(/<br>/i, " ")} - ${pageTitle}`;
+				if (!embed && greeting.titles.length > 0) pageTitle = `${greeting.titles[0].replace(/<br>/i, " ")} - ${pageTitle}`;
 				pageNamespace = "greeting";
 				let greetingPath;
 				let greetingStyle = "";
@@ -143,43 +146,46 @@ const serverHandler = async (request, info) => {
 						greetingBody = greetingBody.replace("strFlashHTML", `<div id="greetmaster-flash-placeholder" ${flashAttrString}></div>`);
 					}
 				}
-				if (greeting.type == "screensaverPreview") {
-					const screensavers = {
-						"Windows": greeting.files.find(path => /\.exe$/.test(path)),
-						"Mac": greeting.files.find(path => /\.zip$/.test(path)),
-					};
-					const screensaverLinks = [];
-					for (const platform in screensavers) {
-						const screensaverPath = screensavers[platform];
-						if (screensaverPath !== undefined)
-							screensaverLinks.push(`<a class="greetmaster-greeting-footer-button" href="/data/${screensaverPath}">${platform}</a>`);
+				if (!embed) {
+					if (greeting.type == "screensaverPreview") {
+						const screensavers = {
+							"Windows": greeting.files.find(path => /\.exe$/.test(path)),
+							"MacOS": greeting.files.find(path => /\.zip$/.test(path)),
+						};
+						const screensaverLinks = [];
+						for (const platform in screensavers) {
+							const screensaverPath = screensavers[platform];
+							if (screensaverPath !== undefined)
+								screensaverLinks.push(`<a class="greetmaster-greeting-footer-button" href="/data/${screensaverPath}">${platform}</a>`);
+						}
+						if (screensaverLinks.length > 0)
+							greetingLinks = screensaverLinks.join(",&nbsp;\n");
 					}
-					if (screensaverLinks.length > 0)
-						greetingLinks = screensaverLinks.join(",&nbsp;\n");
-				}
-				else if (greeting.type == "wallpaperPreview") {
-					const wallpapers = {
-						"640x480": greeting.files.find(path => /640x480\.jpg$/.test(path)) ?? greeting.files.find(path => /640x480\.gif$/.test(path)),
-						"800x600": greeting.files.find(path => /800x600\.jpg$/.test(path)) ?? greeting.files.find(path => /800x600\.gif$/.test(path)),
-						"1024x768": greeting.files.find(path => /1024x768\.jpg$/.test(path)) ?? greeting.files.find(path => /1024x768\.gif$/.test(path)),
-						"1280x1024": greeting.files.find(path => /1280x1024\.jpg$/.test(path)),
-					};
-					const wallpaperLinks = [];
-					for (const size in wallpapers) {
-						const wallpaperPath = wallpapers[size];
-						if (wallpaperPath !== undefined)
-							wallpaperLinks.push(`<a class="greetmaster-greeting-footer-button" href="/data/${wallpaperPath}" target="_blank">${size}</a>`);
+					else if (greeting.type == "wallpaperPreview") {
+						const wallpapers = {
+							"640x480": greeting.files.find(path => /640x480\.jpg$/.test(path)) ?? greeting.files.find(path => /640x480\.gif$/.test(path)),
+							"800x600": greeting.files.find(path => /800x600\.jpg$/.test(path)) ?? greeting.files.find(path => /800x600\.gif$/.test(path)),
+							"1024x768": greeting.files.find(path => /1024x768\.jpg$/.test(path)) ?? greeting.files.find(path => /1024x768\.gif$/.test(path)),
+							"1280x1024": greeting.files.find(path => /1280x1024\.jpg$/.test(path)),
+						};
+						const wallpaperLinks = [];
+						for (const size in wallpapers) {
+							const wallpaperPath = wallpapers[size];
+							if (wallpaperPath !== undefined)
+								wallpaperLinks.push(`<a class="greetmaster-greeting-footer-button" href="/data/${wallpaperPath}" target="_blank">${size}</a>`);
+						}
+						if (wallpaperLinks.length > 0)
+							greetingLinks = wallpaperLinks.join(",&nbsp;\n");
 					}
-					if (wallpaperLinks.length > 0)
-						greetingLinks = wallpaperLinks.join(",&nbsp;\n");
+					if (greetingLinks != "")
+						greetingLinks = indentString(`<div class="greetmaster-greeting-footer-section">Downloads:</div>&nbsp;\n${greetingLinks}`, 2);
 				}
-				if (greetingLinks != "")
-					greetingLinks = indentString(`<div class="greetmaster-greeting-footer-section">Downloads:</div>&nbsp;\n${greetingLinks}`, 6);
-				pageContent = templates.greeting
+				pageContent = (embed ? templates.greetingEmbed : templates.greeting)
 					.replace("{STYLE}", greetingStyle)
 					.replace("{TYPE}", greeting.type)
-					.replace("{BODY}",  greetingBody)
+					.replace("{BODY}",  indentString(greetingBody, 2))
 					.replace("{LINKS}", greetingLinks);
+				pageContent = indentString(pageContent, embed ? 2 : 4);
 			}
 			else {
 				pageNamespace = "home";

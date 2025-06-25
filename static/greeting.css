@@ -18,6 +18,9 @@
 .greetmaster-greeting-max-size .greetmaster-greeting-content {
 	flex-grow: 1;
 }
+.greetmaster-greeting-embed {
+	overflow: auto;
+}
 .greetmaster-greeting-overlay {
 	position: absolute;
 	top: 0;

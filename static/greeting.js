@@ -10,8 +10,7 @@ function prepareHtml(greetingContent, greetingOverlay) {
 		greetingContainer.classList.add("greetmaster-greeting-min-size");
 	}
 	if (greetingContent.id != "greetmaster-html-container") return;
-	const greetingHtml = greetingContent.innerHTML.trim().replaceAll("&lt;!--", "<!--").replaceAll("--&gt;", "-->");
-	greetingContent.innerHTML = greetingHtml.substring(4, greetingHtml.length - 3);
+	uncommentHtml(greetingContent);
 	const greetingFooter = greetingContainer.querySelector(".greetmaster-greeting-footer");
 	greetingOverlay.addEventListener("click", () => {
 		greetingSizeButton.addEventListener("click", () => {
@@ -118,11 +117,19 @@ function loadScript(url) {
 	return new Promise(resolve => script.addEventListener("load", resolve));
 }
 
+function uncommentHtml(greetingContent) {
+	const greetingHtml = greetingContent.innerHTML.trim().replaceAll("&lt;!--", "<!--").replaceAll("--&gt;", "-->");
+	greetingContent.innerHTML = greetingHtml.substring(4, greetingHtml.length - 3);
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
 	const greetingOverlay = document.querySelector(".greetmaster-greeting-overlay");
 	const greetingContent = greetingOverlay.previousElementSibling;
 	if (greetingContent.id != "greetmaster-unsupported-container") {
-		prepareHtml(greetingContent, greetingOverlay);
+		if (params.get("embed") != "true")
+			prepareHtml(greetingContent, greetingOverlay);
+		else if (greetingContent.id == "greetmaster-html-container")
+			uncommentHtml(greetingContent);
 		await prepareMidi(greetingContent, greetingOverlay);
 		await prepareFlash(greetingContent, greetingOverlay);
 		await prepareEmu(greetingContent, greetingOverlay);
