@@ -33,15 +33,15 @@ const flags = parseArgs(Deno.args, {
 
 // Attempt to load config file
 if (getPathInfo(flags["config"])?.isFile) {
-	Object.assign(config, JSON.parse(await Deno.readTextFile(flags["config"])));
-	logMessage(`loaded config file: ${await Deno.realPath(flags["config"])}`);
+	Object.assign(config, JSON.parse(Deno.readTextFileSync(flags["config"])));
+	logMessage(`loaded config file: ${Deno.realPathSync(flags["config"])}`);
 }
 
-const greetings = JSON.parse(await Deno.readTextFile(config.greetingIndex));
-logMessage(`loaded greeting index: ${await Deno.realPath(config.greetingIndex)}`);
+const greetings = JSON.parse(Deno.readTextFileSync(config.greetingIndex));
+logMessage(`loaded greeting index: ${Deno.realPathSync(config.greetingIndex)}`);
 
-const filesystem = JSON.parse(await Deno.readTextFile(config.filesystemIndex));
-logMessage(`loaded filesystem index: ${await Deno.realPath(config.filesystemIndex)}`);
+const filesystem = JSON.parse(Deno.readTextFileSync(config.filesystemIndex));
+logMessage(`loaded filesystem index: ${Deno.realPathSync(config.filesystemIndex)}`);
 
 const typeMap = {
 	"flashEcard":			"Flash E-Card",
@@ -76,7 +76,7 @@ const filters = {
 const urlExps = [/((?:href|src|action|background) *= *)("(?:(?!>).)+?"|[^ >]+)/gis, /(url *)(\(.+?\))/gis];
 
 // Handle server requests
-const serverHandler = async (request, info) => {
+const serverHandler = (request, info) => {
 	logMessage(info.remoteAddr.hostname + ": " + request.url);
 
 	// Make sure request is for a valid URL
@@ -114,7 +114,7 @@ const serverHandler = async (request, info) => {
 				let greetingLinks = "";
 				if ((greetingPath = greeting.files.find(path => /\.html$/.test(path))) !== undefined) {
 					greetingStyle = "greetmaster-html-container";
-					[greetingBody, pageStyle] = getPageData(redirectLinks(await getPage(greetingPath), greetingPath));
+					[greetingBody, pageStyle] = getPageData(redirectLinks(getPage(greetingPath), greetingPath));
 					greetingBody = `<!--${greetingBody.replaceAll("<!--", "&lt;!--").replaceAll("-->", "--&gt;")}-->`;
 				}
 				else if ((greetingPath = greeting.files.find(path => /\.sw[ft]$/.test(path))) !== undefined) {
@@ -317,7 +317,7 @@ const serverHandler = async (request, info) => {
 			if (!requestPath.startsWith("data/")) requestPath = `static/${requestPath}`;
 			if (!getPathInfo(requestPath)?.isFile) throw new NotFoundError();
 			const type = contentType(requestPath.substring(requestPath.lastIndexOf("."))) ?? "application/octet-stream";
-			return new Response(await getFileStream(requestPath), { headers: { "Content-Type": type }});
+			return new Response(Deno.openSync(requestPath).readable, { headers: { "Content-Type": type }});
 		}
 	}
 };
@@ -355,13 +355,13 @@ if (config.httpsPort && config.httpsCert && config.httpsKey)
 		onError: serverError,
 	}, serverHandler);
 
-async function getPage(pagePath) {
+function getPage(pagePath) {
 	let page;
 	const pageEncoding = filesystem[pagePath].encoding;
 	if (pageEncoding == "ASCII" || pageEncoding == "UTF-8")
-		page = await Deno.readTextFile(`data/${pagePath}`);
+		page = Deno.readTextFileSync(`data/${pagePath}`);
 	else
-		page = new TextDecoder().decode((await new Deno.Command("iconv", { args: [`data/${pagePath}`, "-cf", pageEncoding, "-t", "UTF-8"], stdout: "piped" }).output()).stdout);
+		page = new TextDecoder().decode(new Deno.Command("iconv", { args: [`data/${pagePath}`, "-cf", pageEncoding, "-t", "UTF-8"], stdout: "piped" }).outputSync().stdout);
 	return page.replaceAll(/[\r\n]+/g, "\n");
 }
 
@@ -507,9 +507,6 @@ function getPathInfo(path) {
 	try { return Deno.lstatSync(path); } catch {}
 	return null;
 }
-
-// Retrieve file data without consuming memory
-async function getFileStream(path) { return (await fetch(new URL(path, import.meta.url))).body; }
 
 // Remove unwanted characters and whitespace surrounding a string
 function trimString(string) {
