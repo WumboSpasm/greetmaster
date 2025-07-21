@@ -9,10 +9,13 @@ const config = {
 	httpsCert: null,
 	httpsKey: null,
 	accessHosts: [],
+	blockedIPs: [],
+	blockedUAs: [],
 	greetingIndex: "greetings.json",
 	filesystemIndex: "files.json",
 	logFile: "server.log",
 	logToConsole: true,
+	logBlockedRequests: true,
 };
 
 // Define templates
@@ -77,7 +80,20 @@ const urlExps = [/((?:href|src|action|background) *= *)("(?:(?!>).)+?"|[^ >]+)/g
 
 // Handle server requests
 const serverHandler = (request, info) => {
-	logMessage(info.remoteAddr.hostname + ": " + request.url);
+	const ipAddress = info.remoteAddr.hostname;
+	const userAgent = request.headers.get("User-Agent") ?? "";
+
+	// Check if IP or user agent is in blocklist
+	const blockRequest =
+		config.blockedIPs.some(blockedIP => ipAddress.startsWith(blockedIP)) ||
+		config.blockedUAs.some(blockedUA => userAgent.includes(blockedUA));
+
+	// Log the request if desired
+	if (!blockRequest || config.logBlockedRequests)
+		logMessage(`${blockRequest ? "BLOCKED " : ""}${ipAddress} (${userAgent}): ${request.url}`);
+
+	// If request needs to be blocked, return a Not Found error
+	if (blockRequest) throw new NotFoundError();
 
 	// Make sure request is for a valid URL
 	const requestUrl = URL.parse(request.url);
