@@ -3,3 +3,4 @@ files.json
 greetings.json
 server.log
 data/
+.vscode/
