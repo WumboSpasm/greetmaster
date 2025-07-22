@@ -210,7 +210,8 @@ const serverHandler = (request, info) => {
 			const pageSearch = stringifyEntities((params.get("search") ?? "").substring(0, 64), { escapeOnly: true });
 			page = page
 				.replaceAll("{NAMESPACE}", pageNamespace)
-				.replaceAll("{TITLE}", pageTitle)
+				.replace("{TITLE}", pageTitle)
+				.replace("{TITLE}", stringifyEntities(pageTitle, { escapeOnly: true }))
 				.replace("{IMAGE}", `${requestUrl.origin}/logo.png`)
 				.replace("{URL}", request.url)
 				.replace("{NOINDEX}", pageNoindex)
