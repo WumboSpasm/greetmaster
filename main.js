@@ -520,12 +520,12 @@ function getPageData(page) {
 function buildHtml(template, vars) {
 	const varData = [];
 	for (const [key, value] of Object.entries(vars)) {
-		const keyExp = new RegExp(`(^\t+)?(\{${key}\})`, "gm");
+		const keyExp = new RegExp(`(?:(^|\n)(\t*))?\\{${key}\\}`, "g");
 		for (let match; (match = keyExp.exec(template)) !== null;) {
-			const tabCount = (match[1] ?? "").length;
-			const indentedValue = tabCount > 0 ? value.replaceAll(/^/gm, "\t".repeat(tabCount)) : value;
+			const newLine = match[1] ?? "";
+			const tabs = match[2] ?? "";
 			varData.push({
-				value: indentedValue,
+				value: value != "" ? (newLine + value.replaceAll(/^/gm, tabs)) : "",
 				start: match.index,
 				end: match.index + match[0].length
 			});
