@@ -21,7 +21,7 @@ const config = {
 // Define templates
 const templates = {
 	main:			getTemplate("main.html"),
-	mainEmbed:		getTemplate("main_embed.html"),
+	mainNavigation:	getTemplate("main_navigation.html"),
 	greeting:		getTemplate("greeting.html"),
 	greetingEmbed:	getTemplate("greeting_embed.html"),
 	about:			getTemplate("about.html"),
@@ -112,9 +112,9 @@ const serverHandler = (request, info) => {
 	switch (requestPath) {
 		case "": {
 			const embed = params.get("embed") == "true";
-			let page = embed ? templates.mainEmbed : templates.main;
+			let page = templates.main;
 			let pageTitle = "Greetmaster";
-			let pageNoindex = "";
+			let pageNoIndex = "";
 			let pageStyle = "";
 			let pageNamespace = "";
 			let pageContent = "";
@@ -205,19 +205,25 @@ const serverHandler = (request, info) => {
 			}
 			else {
 				pageNamespace = "home";
-				if (params.toString() != "") pageNoindex = `<meta name="robots" content="noindex">`;
+				if (params.toString() != "") pageNoIndex = `<meta name="robots" content="noindex">`;
 			}
-			const pageSearch = stringifyEntities((params.get("search") ?? "").substring(0, 64), { escapeOnly: true });
+			if (!embed || pageNamespace != "greeting")
+				pageContent = buildHtml(templates.mainNavigation, {
+					"SEARCH": pageNamespace == "home"
+						? stringifyEntities((params.get("search") ?? "").substring(0, 64), { escapeOnly: true })
+						: "",
+					"CONTENT": pageContent,
+				});
 			page = buildHtml(page, {
 				"NAMESPACE": pageNamespace,
 				"TITLE": pageTitle,
 				"OGTITLE": stringifyEntities(pageTitle, { escapeOnly: true }),
 				"OGIMAGE": `${requestUrl.origin}/logo.png`,
 				"OGURL": request.url,
-				"NOINDEX": pageNoindex,
+				"NOINDEX": pageNoIndex,
+				"MAINJS": !embed ? `<script src="/main.js" defer></script>` : "",
 				"STYLE": pageStyle,
 				"CONTENT": pageContent,
-				"SEARCH": pageSearch,
 			});
 			return new Response(page, { headers: { "Content-Type": "text/html; charset=UTF-8" } });
 		}
