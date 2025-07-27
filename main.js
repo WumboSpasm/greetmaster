@@ -110,7 +110,8 @@ const serverHandler = (request, info) => {
 	const params = requestUrl.searchParams;
 
 	switch (requestPath) {
-		case "": {
+		case "":
+		case "about": {
 			const mainVars = {
 				"TITLE": "Greetmaster",
 				"OGTITLE": "Greetmaster",
@@ -123,7 +124,13 @@ const serverHandler = (request, info) => {
 				"CONTENT": "",
 			};
 			const embed = params.get("embed") == "true";
-			if (params.has("id")) {
+			if (requestPath == "about") {
+				mainVars["TITLE"] = "About Greetmaster";
+				mainVars["OGTITLE"] = mainVars["TITLE"];
+				mainVars["NAMESPACE"] = "about";
+				mainVars["CONTENT"] = templates.about;
+			}
+			else if (params.has("id")) {
 				const greeting = greetings[params.get("id")];
 				if (!validGreeting(greeting)) throw new BadRequestError();
 				if (embed) {
@@ -215,7 +222,7 @@ const serverHandler = (request, info) => {
 				}
 				mainVars["CONTENT"] = buildHtml(embed ? templates.greetingEmbed : templates.greeting, greetingVars);
 			}
-			else if (params.toString() == "")
+			if (params.toString() == "")
 				mainVars["NOINDEX"] = "";
 			if (!embed || mainVars["NAMESPACE"] != "greeting")
 				mainVars["CONTENT"] = buildHtml(templates.mainNavigation, {
@@ -334,9 +341,6 @@ const serverHandler = (request, info) => {
 			}
 			const randomId = randomList[Math.floor(Math.random() * randomList.length)];
 			return Response.redirect(`${requestUrl.origin}/?id=${randomId}`);
-		}
-		case "about": {
-			return new Response(templates.about, { headers: { "Content-Type": "text/html; charset=UTF-8" } });
 		}
 		default: {
 			if (!requestPath.startsWith("data/")) requestPath = `static/${requestPath}`;
