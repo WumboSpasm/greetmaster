@@ -111,45 +111,62 @@ const serverHandler = (request, info) => {
 
 	switch (requestPath) {
 		case "": {
+			const mainVars = {
+				"TITLE": "Greetmaster",
+				"OGTITLE": "Greetmaster",
+				"OGIMAGE": `${requestUrl.origin}/logo.png`,
+				"OGURL": request.url,
+				"NOINDEX": `<meta name="robots" content="noindex">`,
+				"NAMESPACE": "home",
+				"MAINJS": `<script src="/main.js" defer></script>`,
+				"STYLE": "",
+				"CONTENT": "",
+			};
 			const embed = params.get("embed") == "true";
-			let page = templates.main;
-			let pageTitle = "Greetmaster";
-			let pageNoIndex = "";
-			let pageStyle = "";
-			let pageNamespace = "";
-			let pageContent = "";
 			if (params.has("id")) {
 				const greeting = greetings[params.get("id")];
 				if (!validGreeting(greeting)) throw new BadRequestError();
-				pageTitle = `${typeMap[greeting.type]} at Greetmaster`;
-				if (!embed && greeting.titles.length > 0) pageTitle = `${greeting.titles[0].replace(/<br>/i, " ")} - ${pageTitle}`;
-				pageNamespace = "greeting";
-				let greetingPath;
-				let greetingStyle = "";
-				let greetingBody = "";
-				let greetingLinks = "";
-				if ((greetingPath = greeting.files.find(path => /\.html$/.test(path))) !== undefined) {
-					greetingStyle = "greetmaster-html-container";
-					[greetingBody, pageStyle] = getPageData(redirectLinks(getPage(greetingPath), greetingPath));
-					greetingBody = `<!--${greetingBody.replaceAll("<!--", "&lt;!--").replaceAll("-->", "--&gt;")}-->`;
-				}
-				else if ((greetingPath = greeting.files.find(path => /\.sw[ft]$/.test(path))) !== undefined) {
-					greetingStyle = "greetmaster-flash-container";
-					greetingBody = "strFlashHTML";
-				}
-				else if ((greetingPath = greeting.files.find(path => /\/product\/full\/\d{7}f\.gif$/.test(path))) !== undefined) {
-					greetingStyle = "greetmaster-image-container";
-					greetingBody = `<img src="/data/${greetingPath}">`;
-				}
-				else if ((greetingPath = greeting.files.find(path => [/\/product\/preview\/slideshows\/exe\/\d{7}f\.exe$/, /\.dcr$/].some(pathExp => pathExp.test(path)))) !== undefined) {
-					greetingStyle = "greetmaster-emu-container";
-					greetingBody = `<div id="greetmaster-emu-placeholder" data-src="/data/${greetingPath}"></div>`;
+				if (embed) {
+					mainVars["TITLE"] = "E-Card at Greetmaster";
+					mainVars["MAINJS"] = "";
 				}
 				else {
-					greetingStyle = "greetmaster-unsupported-container";
-					greetingBody = "Unfortunately, this e-card is currently not supported.";
+					mainVars["TITLE"] = `${typeMap[greeting.type]} at Greetmaster`;
+					if (greeting.titles.length > 0)
+						mainVars["TITLE"] = `${greeting.titles[0].replace(/<br>/i, " ")} - ${mainVars["TITLE"]}`;
 				}
-				if (greetingBody.includes("strFlashHTML")) {
+				mainVars["OGTITLE"] = stringifyEntities(mainVars["TITLE"], { escapeOnly: true })
+				mainVars["NOINDEX"] = "";
+				mainVars["NAMESPACE"] = "greeting";
+				const greetingVars = {
+					"STYLE": "",
+					"TYPE": greeting.type,
+					"BODY":  "",
+					"LINKS": "",
+				};
+				let greetingPath;
+				if ((greetingPath = greeting.files.find(path => /\.html$/.test(path))) !== undefined) {
+					greetingVars["STYLE"] = "greetmaster-html-container";
+					[greetingVars["BODY"], mainVars["STYLE"]] = getPageData(redirectLinks(getPage(greetingPath), greetingPath));
+					greetingVars["BODY"] = `<!--${greetingVars["BODY"].replaceAll("<!--", "&lt;!--").replaceAll("-->", "--&gt;")}-->`;
+				}
+				else if ((greetingPath = greeting.files.find(path => /\.sw[ft]$/.test(path))) !== undefined) {
+					greetingVars["STYLE"] = "greetmaster-flash-container";
+					greetingVars["BODY"] = "strFlashHTML";
+				}
+				else if ((greetingPath = greeting.files.find(path => /\/product\/full\/\d{7}f\.gif$/.test(path))) !== undefined) {
+					greetingVars["STYLE"] = "greetmaster-image-container";
+					greetingVars["BODY"] = `<img src="/data/${greetingPath}">`;
+				}
+				else if ((greetingPath = greeting.files.find(path => [/\/product\/preview\/slideshows\/exe\/\d{7}f\.exe$/, /\.dcr$/].some(pathExp => pathExp.test(path)))) !== undefined) {
+					greetingVars["STYLE"] = "greetmaster-emu-container";
+					greetingVars["BODY"] = `<div id="greetmaster-emu-placeholder" data-src="/data/${greetingPath}"></div>`;
+				}
+				else {
+					greetingVars["STYLE"] = "greetmaster-unsupported-container";
+					greetingVars["BODY"] = "Unfortunately, this e-card is currently not supported.";
+				}
+				if (greetingVars["BODY"].includes("strFlashHTML")) {
 					const flashPath = greeting.files.find(path => /\.swf$/.test(path)) ?? greeting.files.find(path => /\.swt$/.test(path));
 					if (flashPath !== undefined) {
 						const flashInfo = filesystem[flashPath];
@@ -159,7 +176,7 @@ const serverHandler = (request, info) => {
 							`data-height="${flashInfo.height}"`,
 							`data-protected="${flashInfo.protected}"`,
 						].join(" ");
-						greetingBody = greetingBody.replace("strFlashHTML", `<div id="greetmaster-flash-placeholder" ${flashAttrString}></div>`);
+						greetingVars["BODY"] = greetingVars["BODY"].replace("strFlashHTML", `<div id="greetmaster-flash-placeholder" ${flashAttrString}></div>`);
 					}
 				}
 				if (!embed) {
@@ -175,7 +192,7 @@ const serverHandler = (request, info) => {
 								screensaverLinks.push(`<a class="greetmaster-greeting-footer-button" href="/data/${screensaverPath}">${platform}</a>`);
 						}
 						if (screensaverLinks.length > 0)
-							greetingLinks = screensaverLinks.join(",&nbsp;\n");
+							greetingVars["LINKS"] = screensaverLinks.join(",&nbsp;\n");
 					}
 					else if (greeting.type == "wallpaperPreview") {
 						const wallpapers = {
@@ -191,41 +208,23 @@ const serverHandler = (request, info) => {
 								wallpaperLinks.push(`<a class="greetmaster-greeting-footer-button" href="/data/${wallpaperPath}" target="_blank">${size}</a>`);
 						}
 						if (wallpaperLinks.length > 0)
-							greetingLinks = wallpaperLinks.join(",&nbsp;\n");
+							greetingVars["LINKS"] = wallpaperLinks.join(",&nbsp;\n");
 					}
-					if (greetingLinks != "")
-						greetingLinks = `<div class="greetmaster-greeting-footer-section">Downloads:</div>&nbsp;\n${greetingLinks}`;
+					if (greetingVars["LINKS"] != "")
+						greetingVars["LINKS"] = `<div class="greetmaster-greeting-footer-section">Downloads:</div>&nbsp;\n${greetingVars["LINKS"]}`;
 				}
-				pageContent = buildHtml(embed ? templates.greetingEmbed : templates.greeting, {
-					"STYLE": greetingStyle,
-					"TYPE": greeting.type,
-					"BODY":  greetingBody,
-					"LINKS": greetingLinks,
-				});
+				mainVars["CONTENT"] = buildHtml(embed ? templates.greetingEmbed : templates.greeting, greetingVars);
 			}
-			else {
-				pageNamespace = "home";
-				if (params.toString() != "") pageNoIndex = `<meta name="robots" content="noindex">`;
-			}
-			if (!embed || pageNamespace != "greeting")
-				pageContent = buildHtml(templates.mainNavigation, {
-					"SEARCH": pageNamespace == "home"
+			else if (params.toString() == "")
+				mainVars["NOINDEX"] = "";
+			if (!embed || mainVars["NAMESPACE"] != "greeting")
+				mainVars["CONTENT"] = buildHtml(templates.mainNavigation, {
+					"SEARCH": mainVars["NAMESPACE"] == "home"
 						? stringifyEntities((params.get("search") ?? "").substring(0, 64), { escapeOnly: true })
 						: "",
-					"CONTENT": pageContent,
+					"CONTENT": mainVars["CONTENT"],
 				});
-			page = buildHtml(page, {
-				"NAMESPACE": pageNamespace,
-				"TITLE": pageTitle,
-				"OGTITLE": stringifyEntities(pageTitle, { escapeOnly: true }),
-				"OGIMAGE": `${requestUrl.origin}/logo.png`,
-				"OGURL": request.url,
-				"NOINDEX": pageNoIndex,
-				"MAINJS": !embed ? `<script src="/main.js" defer></script>` : "",
-				"STYLE": pageStyle,
-				"CONTENT": pageContent,
-			});
-			return new Response(page, { headers: { "Content-Type": "text/html; charset=UTF-8" } });
+			return new Response(buildHtml(templates.main, mainVars), { headers: { "Content-Type": "text/html; charset=UTF-8" } });
 		}
 		case "get": {
 			const greetingList = {};
