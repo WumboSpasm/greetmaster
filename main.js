@@ -194,30 +194,31 @@ const serverHandler = (request, info) => {
 							greetingLinks = wallpaperLinks.join(",&nbsp;\n");
 					}
 					if (greetingLinks != "")
-						greetingLinks = indentString(`<div class="greetmaster-greeting-footer-section">Downloads:</div>&nbsp;\n${greetingLinks}`, 2);
+						greetingLinks = `<div class="greetmaster-greeting-footer-section">Downloads:</div>&nbsp;\n${greetingLinks}`;
 				}
-				pageContent = (embed ? templates.greetingEmbed : templates.greeting)
-					.replace("{STYLE}", greetingStyle)
-					.replace("{TYPE}", greeting.type)
-					.replace("{BODY}",  indentString(greetingBody, 2))
-					.replace("{LINKS}", greetingLinks);
-				pageContent = indentString(pageContent, embed ? 2 : 4);
+				pageContent = buildHtml(embed ? templates.greetingEmbed : templates.greeting, {
+					"STYLE": greetingStyle,
+					"TYPE": greeting.type,
+					"BODY":  greetingBody,
+					"LINKS": greetingLinks,
+				});
 			}
 			else {
 				pageNamespace = "home";
-				if (params.toString() != "") pageNoindex = `\t\t<meta name="robots" content="noindex">`;
+				if (params.toString() != "") pageNoindex = `<meta name="robots" content="noindex">`;
 			}
 			const pageSearch = stringifyEntities((params.get("search") ?? "").substring(0, 64), { escapeOnly: true });
-			page = page
-				.replaceAll("{NAMESPACE}", pageNamespace)
-				.replace("{TITLE}", pageTitle)
-				.replace("{TITLE}", stringifyEntities(pageTitle, { escapeOnly: true }))
-				.replace("{IMAGE}", `${requestUrl.origin}/logo.png`)
-				.replace("{URL}", request.url)
-				.replace("{NOINDEX}", pageNoindex)
-				.replace("{STYLE}", pageStyle)
-				.replace("{CONTENT}", pageContent)
-				.replace("{SEARCH}", pageSearch);
+			page = buildHtml(page, {
+				"NAMESPACE": pageNamespace,
+				"TITLE": pageTitle,
+				"OGTITLE": stringifyEntities(pageTitle, { escapeOnly: true }),
+				"OGIMAGE": `${requestUrl.origin}/logo.png`,
+				"OGURL": request.url,
+				"NOINDEX": pageNoindex,
+				"STYLE": pageStyle,
+				"CONTENT": pageContent,
+				"SEARCH": pageSearch,
+			});
 			return new Response(page, { headers: { "Content-Type": "text/html; charset=UTF-8" } });
 		}
 		case "get": {
@@ -346,14 +347,16 @@ const serverError = (error) => {
 	const [badRequest, notFound] = [error instanceof BadRequestError, error instanceof NotFoundError];
 	let errorPage = templates.error;
 	if (badRequest || notFound)
-		errorPage = errorPage
-			.replaceAll("{STATUSTEXT}", `${error.status} ${error.statusText}`)
-			.replaceAll("{MESSAGE}", badRequest ? "The requested URL is invalid." : "The requested URL does not exist.");
+		errorPage = buildHtml(errorPage, {
+			"STATUSTEXT": `${error.status} ${error.statusText}`,
+			"MESSAGE": badRequest ? "The requested URL is invalid." : "The requested URL does not exist."
+		});
 	else {
 		logMessage(error.stack);
-		errorPage = errorPage
-			.replaceAll("{STATUSTEXT}", "500 Internal Server Error")
-			.replaceAll("{MESSAGE}", "The server encountered an error while handling the request.");
+		errorPage = buildHtml(errorPage, {
+			"STATUSTEXT": "500 Internal Server Error",
+			"MESSAGE": "The server encountered an error while handling the request.",
+		});
 	}
 	return new Response(errorPage, { status: error.status ?? 500, headers: { "Content-Type": "text/html; charset=UTF-8" } });
 };
@@ -464,7 +467,7 @@ function getPageData(page) {
 		const styles = [];
 		if (bodyStyles.length > 0) styles.push(`#greetmaster-html-container { ${bodyStyles.join("; ")}; }`);
 		if (linkStyles.length > 0) styles.push(...linkStyles);
-		if (styles.length > 0) styleElement = indentString(`<style>\n${styles.map(style => `\t${style}`).join("\n")}\n</style>`, 2);
+		if (styles.length > 0) styleElement = `<style>\n${styles.map(style => `\t${style}`).join("\n")}\n</style>`;
 		bodyContent = body[2];
 	}
 	const embedExp = /\s*(<(?:embed|bgsound|noembed>\s*<bgsound)[^>]+>)(?:\s*<\/(?:no)?embed>)?/gi;
@@ -504,6 +507,31 @@ function getPageData(page) {
 	return [bodyContent, styleElement];
 }
 
+// Build HTML by filling template with supplied variables
+function buildHtml(template, vars) {
+	const varData = [];
+	for (const [key, value] of Object.entries(vars)) {
+		const keyExp = new RegExp(`(^\t+)?(\{${key}\})`, "gm");
+		for (let match; (match = keyExp.exec(template)) !== null;) {
+			const tabCount = (match[1] ?? "").length;
+			const indentedValue = tabCount > 0 ? value.replaceAll(/^/gm, "\t".repeat(tabCount)) : value;
+			varData.push({
+				value: indentedValue,
+				start: match.index,
+				end: match.index + match[0].length
+			});
+		}
+	}
+	let offset = 0;
+	let html = "";
+	for (const entry of varData.toSorted((a, b) => a.start - b.start)) {
+		html += template.substring(0, entry.start - offset) + entry.value;
+		template = template.substring(entry.end - offset);
+		offset = entry.end;
+	}
+	return html + template;
+}
+
 // Extract filters from query string
 function getRequestFilters(params) {
 	const paramKeys = [...params.keys()];
@@ -534,9 +562,6 @@ function trimString(string) {
 		.replace((string.startsWith("(") && string.endsWith(")")) ? /^\("?(.*?)"?\)$/s : /^"?(.*?)"?$/s, "$1")
 		.replace(/[\r\n]+/g, "").trim();
 }
-
-// Add specified number of tabs to beginning of each line in string
-function indentString(string, tabs) { return string.split("\n").map(line => "\t".repeat(tabs) + line).join("\n"); }
 
 // Log to the appropriate locations
 function logMessage(message) {
