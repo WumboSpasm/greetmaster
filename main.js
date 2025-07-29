@@ -117,9 +117,9 @@ const serverHandler = (request, info) => {
 				"OGTITLE": "Greetmaster",
 				"OGIMAGE": `${requestUrl.origin}/logo.png`,
 				"OGURL": request.url,
-				"NOINDEX": `<meta name="robots" content="noindex">`,
+				"NOINDEX": true,
 				"NAMESPACE": "home",
-				"MAINJS": `<script src="/main.js" defer></script>`,
+				"MAINJS": true,
 				"STYLE": "",
 				"CONTENT": "",
 			};
@@ -135,7 +135,7 @@ const serverHandler = (request, info) => {
 				if (!validGreeting(greeting)) throw new BadRequestError();
 				if (embed) {
 					mainVars["TITLE"] = "E-Card at Greetmaster";
-					mainVars["MAINJS"] = "";
+					mainVars["MAINJS"] = false;
 				}
 				else {
 					mainVars["TITLE"] = `${typeMap[greeting.type]} at Greetmaster`;
@@ -143,7 +143,7 @@ const serverHandler = (request, info) => {
 						mainVars["TITLE"] = `${greeting.titles[0].replace(/<br>/i, " ")} - ${mainVars["TITLE"]}`;
 				}
 				mainVars["OGTITLE"] = stringifyEntities(mainVars["TITLE"], { escapeOnly: true })
-				mainVars["NOINDEX"] = "";
+				mainVars["NOINDEX"] = false;
 				mainVars["NAMESPACE"] = "greeting";
 				const greetingVars = {
 					"STYLE": "",
@@ -223,7 +223,7 @@ const serverHandler = (request, info) => {
 				mainVars["CONTENT"] = buildHtml(embed ? templates.greetingEmbed : templates.greeting, greetingVars);
 			}
 			if (params.toString() == "")
-				mainVars["NOINDEX"] = "";
+				mainVars["NOINDEX"] = false;
 			if (!embed || mainVars["NAMESPACE"] != "greeting")
 				mainVars["CONTENT"] = buildHtml(templates.mainNavigation, {
 					"SEARCH": mainVars["NAMESPACE"] == "home"
@@ -520,12 +520,15 @@ function getPageData(page) {
 function buildHtml(template, vars) {
 	const varData = [];
 	for (const [key, value] of Object.entries(vars)) {
-		const keyExp = new RegExp(`(?:(^|\n)(\t*))?\\{${key}\\}`, "g");
+		const keyExp = new RegExp(`(?:(^|\n)(\t*))?\\{${key}(?:\\?(.*?))?\\}`, "gs");
 		for (let match; (match = keyExp.exec(template)) !== null;) {
 			const newLine = match[1] ?? "";
 			const tabs = match[2] ?? "";
+			const injectedValue = typeof value == "boolean"
+				? (value ? (newLine + tabs + (match[3] ?? "")) : "")
+				: (value != "" ? (newLine + value.replaceAll(/^/gm, tabs)) : "");
 			varData.push({
-				value: value != "" ? (newLine + value.replaceAll(/^/gm, tabs)) : "",
+				value: injectedValue,
 				start: match.index,
 				end: match.index + match[0].length
 			});

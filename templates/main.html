@@ -9,11 +9,11 @@
 		<meta name="og:image" content="{OGIMAGE}">
 		<meta name="og:url" content="{OGURL}">
 		<meta name="og:description" content="Greetmaster is an online museum of over 30,000 e-cards published from 1995 to 2007.">
-		{NOINDEX}
+		{NOINDEX?<meta name="robots" content="noindex">}
 		<link rel="stylesheet" href="/main.css">
 		<link rel="stylesheet" href="/{NAMESPACE}.css">
 		<script src="/global.js"></script>
-		{MAINJS}
+		{MAINJS?<script src="/main.js" defer></script>}
 		<script src="/{NAMESPACE}.js" type="module"></script>
 		{STYLE}
 	</head>
