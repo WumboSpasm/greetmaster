@@ -133,7 +133,8 @@ const serverHandler = (request, info) => {
 				mainVars["CONTENT"] = templates.about;
 			}
 			else if (params.has("id")) {
-				const greeting = greetings[params.get("id")];
+				const id = params.get("id");
+				const greeting = greetings[id];
 				if (!validGreeting(greeting)) throw new BadRequestError();
 				if (embed) {
 					mainVars["TITLE"] = "E-Card at Greetmaster";
@@ -143,9 +144,11 @@ const serverHandler = (request, info) => {
 					mainVars["TITLE"] = `${typeMap[greeting.type]} at Greetmaster`;
 					if (greeting.titles.length > 0)
 						mainVars["TITLE"] = `${greeting.titles[0].replace(/<br>/i, " ")} - ${mainVars["TITLE"]}`;
+					if (greeting.thumbnail != "")
+						mainVars["OGIMAGE"] = `${requestUrl.origin}/data/thumbs/${id.substring(0, 4)}/${id}.png`;
 					mainVars["NOINDEX"] = false;
 				}
-				mainVars["OGTITLE"] = stringifyEntities(mainVars["TITLE"], { escapeOnly: true })
+				mainVars["OGTITLE"] = stringifyEntities(mainVars["TITLE"], { escapeOnly: true });
 				mainVars["PAGECSS"] = "greeting.css";
 				mainVars["PAGESCRIPT"] = "greeting.js";
 				const greetingVars = {
