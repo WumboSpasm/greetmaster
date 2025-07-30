@@ -11,10 +11,10 @@
 		<meta name="og:description" content="Greetmaster is an online museum of over 30,000 e-cards published from 1995 to 2007.">
 		{NOINDEX?<meta name="robots" content="noindex">}
 		<link rel="stylesheet" href="/main.css">
-		<link rel="stylesheet" href="/{NAMESPACE}.css">
+		{PAGECSS?<link rel="stylesheet" href="/{VALUE}">}
 		<script src="/global.js"></script>
-		{MAINJS?<script src="/main.js" defer></script>}
-		<script src="/{NAMESPACE}.js" type="module"></script>
+		{NAVSCRIPT?<script src="/main.js" defer></script>}
+		{PAGESCRIPT?<script src="/{VALUE}" type="module"></script>}
 		{STYLE}
 	</head>
 	<body>

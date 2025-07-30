@@ -118,8 +118,9 @@ const serverHandler = (request, info) => {
 				"OGIMAGE": `${requestUrl.origin}/logo.png`,
 				"OGURL": request.url,
 				"NOINDEX": true,
-				"NAMESPACE": "home",
-				"MAINJS": true,
+				"PAGECSS": "home.css",
+				"NAVSCRIPT": true,
+				"PAGESCRIPT": "home.js",
 				"STYLE": "",
 				"CONTENT": "",
 			};
@@ -127,7 +128,8 @@ const serverHandler = (request, info) => {
 			if (requestPath == "about") {
 				mainVars["TITLE"] = "About Greetmaster";
 				mainVars["OGTITLE"] = mainVars["TITLE"];
-				mainVars["NAMESPACE"] = "about";
+				mainVars["PAGECSS"] = "about.css";
+				mainVars["PAGESCRIPT"] = false;
 				mainVars["CONTENT"] = templates.about;
 			}
 			else if (params.has("id")) {
@@ -135,7 +137,7 @@ const serverHandler = (request, info) => {
 				if (!validGreeting(greeting)) throw new BadRequestError();
 				if (embed) {
 					mainVars["TITLE"] = "E-Card at Greetmaster";
-					mainVars["MAINJS"] = false;
+					mainVars["NAVSCRIPT"] = false;
 				}
 				else {
 					mainVars["TITLE"] = `${typeMap[greeting.type]} at Greetmaster`;
@@ -144,7 +146,8 @@ const serverHandler = (request, info) => {
 				}
 				mainVars["OGTITLE"] = stringifyEntities(mainVars["TITLE"], { escapeOnly: true })
 				mainVars["NOINDEX"] = false;
-				mainVars["NAMESPACE"] = "greeting";
+				mainVars["PAGECSS"] = "greeting.css";
+				mainVars["PAGESCRIPT"] = "greeting.js";
 				const greetingVars = {
 					"STYLE": "",
 					"TYPE": greeting.type,
@@ -224,9 +227,9 @@ const serverHandler = (request, info) => {
 			}
 			if (params.toString() == "")
 				mainVars["NOINDEX"] = false;
-			if (!embed || mainVars["NAMESPACE"] != "greeting")
+			if (!embed || mainVars["PAGESCRIPT"] != "greeting.js")
 				mainVars["CONTENT"] = buildHtml(templates.mainNavigation, {
-					"SEARCH": mainVars["NAMESPACE"] == "home"
+					"SEARCH": mainVars["PAGESCRIPT"] == "home.js"
 						? stringifyEntities((params.get("search") ?? "").substring(0, 64), { escapeOnly: true })
 						: "",
 					"CONTENT": mainVars["CONTENT"],
@@ -520,15 +523,18 @@ function getPageData(page) {
 function buildHtml(template, vars) {
 	const varData = [];
 	for (const [key, value] of Object.entries(vars)) {
-		const keyExp = new RegExp(`(?:(^|\n)(\t*))?\\{${key}(?:\\?(.*?))?\\}`, "gs");
+		const keyExp = new RegExp(`(?:(^|\n)(\t*))?\\{${key}(?:\\?(.*?(?<!\\{VALUE)))?\\}`, "gs");
 		for (let match; (match = keyExp.exec(template)) !== null;) {
 			const newLine = match[1] ?? "";
 			const tabs = match[2] ?? "";
-			const injectedValue = typeof value == "boolean"
-				? (value ? (newLine + tabs + (match[3] ?? "")) : "")
-				: (value != "" ? (newLine + value.replaceAll(/^/gm, tabs)) : "");
+			const inlineValue = match[3];
+			const realValue = value ? (
+				inlineValue !== undefined
+					? (newLine + tabs + (typeof value == "string" ? inlineValue.replace("{VALUE}", value) : inlineValue))
+					: newLine + value.replaceAll(/^/gm, tabs)
+			) : "";
 			varData.push({
-				value: injectedValue,
+				value: realValue,
 				start: match.index,
 				end: match.index + match[0].length
 			});
