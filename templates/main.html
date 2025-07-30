@@ -10,10 +10,11 @@
 		<meta name="og:url" content="{OGURL}">
 		<meta name="og:description" content="Greetmaster is an online museum of over 30,000 e-cards published from 1995 to 2007.">
 		{NOINDEX?<meta name="robots" content="noindex">}
-		<link rel="stylesheet" href="/main.css">
+		<link rel="stylesheet" href="/global.css">
+		{SHOWNAV?<link rel="stylesheet" href="/navigation.css">}
 		{PAGECSS?<link rel="stylesheet" href="/{VALUE}">}
 		<script src="/global.js"></script>
-		{NAVSCRIPT?<script src="/main.js" defer></script>}
+		{SHOWNAV?<script src="/navigation.js" defer></script>}
 		{PAGESCRIPT?<script src="/{VALUE}" type="module"></script>}
 		{STYLE}
 	</head>

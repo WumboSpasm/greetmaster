@@ -118,8 +118,8 @@ const serverHandler = (request, info) => {
 				"OGIMAGE": `${requestUrl.origin}/logo.png`,
 				"OGURL": request.url,
 				"NOINDEX": true,
+				"SHOWNAV": true,
 				"PAGECSS": "home.css",
-				"NAVSCRIPT": true,
 				"PAGESCRIPT": "home.js",
 				"STYLE": "",
 				"CONTENT": "",
@@ -137,15 +137,15 @@ const serverHandler = (request, info) => {
 				if (!validGreeting(greeting)) throw new BadRequestError();
 				if (embed) {
 					mainVars["TITLE"] = "E-Card at Greetmaster";
-					mainVars["NAVSCRIPT"] = false;
+					mainVars["SHOWNAV"] = false;
 				}
 				else {
 					mainVars["TITLE"] = `${typeMap[greeting.type]} at Greetmaster`;
 					if (greeting.titles.length > 0)
 						mainVars["TITLE"] = `${greeting.titles[0].replace(/<br>/i, " ")} - ${mainVars["TITLE"]}`;
+					mainVars["NOINDEX"] = false;
 				}
 				mainVars["OGTITLE"] = stringifyEntities(mainVars["TITLE"], { escapeOnly: true })
-				mainVars["NOINDEX"] = false;
 				mainVars["PAGECSS"] = "greeting.css";
 				mainVars["PAGESCRIPT"] = "greeting.js";
 				const greetingVars = {
