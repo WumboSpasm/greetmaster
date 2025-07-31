@@ -46,25 +46,24 @@ logMessage(`loaded greeting index: ${Deno.realPathSync(config.greetingIndex)}`);
 const filesystem = JSON.parse(Deno.readTextFileSync(config.filesystemIndex));
 logMessage(`loaded filesystem index: ${Deno.realPathSync(config.filesystemIndex)}`);
 
-const typeMap = {
-	"flashEcard":			"Flash E-Card",
-	"htmlEcard":			"HTML E-Card",
-	"animatedTextEcard":	"Animated Text E-Card",
-	"photoVideoEcard":		"Photo/Video E-Card",
-	"imageEcard":			"Image E-Card",
-	"downloadableEcard":	"Downloadable E-Card",
-	"javaEcard":			"Java E-Card",
-	"shockwaveEcard":		"Shockwave E-Card",
-	//"wallpaper":			"Wallpaper",
-	"wallpaperPreview":		"Wallpaper Preview",
-	"screensaverPreview":	"Screensaver Preview",
-	"creataMailTemplate":	"CreataMail Template",
-	//"creataMailClipArt":	"CreataMail Clip Art",
-	//"creataMailIcon":		"CreataMail Icon",
-	//"creataMailAudio":	"CreataMail Audio",
-	//"createPrintCard":	"Create & Print Card",
-};
-const supportedTypes = Object.keys(typeMap);
+const supportedTypes = [
+	"Flash E-Card",
+	"HTML E-Card",
+	"Animated Text E-Card",
+	"Photo/Video E-Card",
+	"Image E-Card",
+	"Downloadable E-Card",
+	"Java E-Card",
+	"Shockwave E-Card",
+	//"Wallpaper",
+	"Wallpaper Preview",
+	"Screensaver Preview",
+	"CreataMail Template",
+	//"CreataMail Clip Art",
+	//"CreataMail Icon",
+	//"CreataMail Audio",
+	//"Create & Print Card",
+];
 
 const fields = ["titles", "categories", "sources", "type", "thumbnail", "files"];
 
@@ -141,7 +140,7 @@ const serverHandler = (request, info) => {
 					mainVars["SHOWNAV"] = false;
 				}
 				else {
-					mainVars["TITLE"] = `${typeMap[greeting.type]} at Greetmaster`;
+					mainVars["TITLE"] = `${greeting.type} at Greetmaster`;
 					if (greeting.titles.length > 0)
 						mainVars["TITLE"] = `${greeting.titles[0].replace(/<br>/i, " ")} - ${mainVars["TITLE"]}`;
 					if (greeting.thumbnail != "")
@@ -193,7 +192,7 @@ const serverHandler = (request, info) => {
 					}
 				}
 				if (!embed) {
-					if (greeting.type == "screensaverPreview") {
+					if (greeting.type == "Screensaver Preview") {
 						const screensavers = {
 							"Windows": greeting.files.find(path => /\.exe$/.test(path)),
 							"MacOS": greeting.files.find(path => /\.zip$/.test(path)),
@@ -207,7 +206,7 @@ const serverHandler = (request, info) => {
 						if (screensaverLinks.length > 0)
 							greetingVars["LINKS"] = screensaverLinks.join(",&nbsp;\n");
 					}
-					else if (greeting.type == "wallpaperPreview") {
+					else if (greeting.type == "Wallpaper Preview") {
 						const wallpapers = {
 							"640x480": greeting.files.find(path => /640x480\.jpg$/.test(path)) ?? greeting.files.find(path => /640x480\.gif$/.test(path)),
 							"800x600": greeting.files.find(path => /800x600\.jpg$/.test(path)) ?? greeting.files.find(path => /800x600\.gif$/.test(path)),

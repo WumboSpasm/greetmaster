@@ -58,7 +58,7 @@ async function prepareFlash(greetingContent, greetingOverlay) {
 	player.ruffle().config.splashScreen = false;
 	player.addEventListener("loadedmetadata", () => {
 		if (player.ruffle().metadata.width > 1 && player.ruffle().metadata.height > 1) {
-			const screensaver = greetingContent.dataset.type == "screensaverPreview";
+			const screensaver = greetingContent.dataset.type == "Screensaver Preview";
 			player.style.width  = `${!screensaver ? player.ruffle().metadata.width : 224}px`;
 			player.style.height = `${!screensaver ? player.ruffle().metadata.height : 168}px`;
 		}
@@ -85,7 +85,7 @@ async function prepareEmu(greetingContent, greetingOverlay) {
 		loadScript("/emu/zip-fs-full.min.js"),
 	]);
 	const emuPlaceholder = greetingContent.querySelector("#greetmaster-emu-placeholder");
-	const shockwave = greetingContent.dataset.type == "shockwaveEcard";
+	const shockwave = greetingContent.dataset.type == "Shockwave E-Card";
 	const [systemFiles, greetingFile, projectorFile] = await Promise.all([
 		fetch("/emu/win31.zip"),
 		fetch(emuPlaceholder.dataset.src),

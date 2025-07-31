@@ -1,22 +1,3 @@
-const typeMap = {
-	"flashEcard":			"Flash E-Card",
-	"htmlEcard":			"HTML E-Card",
-	"animatedTextEcard":	"Animated Text E-Card",
-	"photoVideoEcard":		"Photo/Video E-Card",
-	"imageEcard":			"Image E-Card",
-	"downloadableEcard":	"Downloadable E-Card",
-	"javaEcard":			"Java E-Card",
-	"shockwaveEcard":		"Shockwave E-Card",
-	"wallpaper":			"Wallpaper",
-	"wallpaperPreview":		"Wallpaper Preview",
-	"screensaverPreview":	"Screensaver Preview",
-	"creataMailTemplate":	"CreataMail Template",
-	"creataMailClipArt":	"CreataMail Clip Art",
-	"creataMailIcon":		"CreataMail Icon",
-	"creataMailAudio":		"CreataMail Audio",
-	"createPrintCard":		"Create & Print Card",
-};
-
 const fieldMap = [
 //	filter			stat			display name
 	["search",		"search",		"Search Query"],
@@ -63,9 +44,7 @@ function loadSidebar() {
 				pageStatEntry.classList.add("greetmaster-sidebar-entry", "greetmaster-stat-entry");
 				const pageStatEntryName = document.createElement("div");
 				pageStatEntryName.className = "greetmaster-sidebar-entry-left";
-				pageStatEntryName.textContent = stat == "types"
-					? (typeMap[statEntryName] ?? statEntryName)
-					: statEntryName.replace(/<br>/gi, "\n").replace(/\n+/g, "\n");
+				pageStatEntryName.textContent = statEntryName.replace(/<br>/gi, "\n").replace(/\n+/g, "\n");
 				const pageStatEntryCount = document.createElement("div");
 				pageStatEntryCount.className = "greetmaster-sidebar-entry-right";
 				pageStatEntryCount.textContent = statEntryCount.toLocaleString();
