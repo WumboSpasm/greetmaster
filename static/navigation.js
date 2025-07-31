@@ -18,12 +18,12 @@ const typeMap = {
 };
 
 const fieldMap = [
-//	filter			stat			display name		unlisted?
-	["search",		"search",		"Search Query",		true],
-	["title",		"titles",		"Titles",			true],
-	["type",		"types",		"Types",			false],
-	["category",	"categories",	"Categories",		false],
-	["source",		"sources",		"Sources",			false],
+//	filter			stat			display name
+	["search",		"search",		"Search Query"],
+	["title",		"titles",		"Titles"],
+	["type",		"types",		"Types"],
+	["category",	"categories",	"Categories"],
+	["source",		"sources",		"Sources"],
 ];
 
 const pageExpandIcon = "var(--greetmaster-expand-icon)";
@@ -45,7 +45,7 @@ function loadSidebar() {
 	else if (filterParamsString != "")
 		statsUrl += `?${filterParamsString}`;
 	fetch(statsUrl).then(response => response.json()).then(stats => {
-		for (const [filter, stat, displayName, unlisted] of fieldMap) {
+		for (const [filter, stat, displayName] of fieldMap) {
 			if (stats[stat] === undefined) stats[stat] = {};
 			const filterValues = filterParams.getAll(filter);
 			if (filterValues.length > 0) {
@@ -55,10 +55,10 @@ function loadSidebar() {
 						stats[stat][filterValue] = stats.total;
 				}
 			}
-			const statEntries = stats[stat];
-			if (Object.keys(statEntries).length == 0) continue;
+			const statEntries = Object.entries(stats[stat]);
+			if (statEntries.length == 0) continue;
 			const pageStatEntries = document.createDocumentFragment();
-			for (const statEntryName in statEntries) {
+			for (const [statEntryName, statEntryCount] of statEntries.toSorted(([,a], [,b]) => b - a)) {
 				const pageStatEntry = document.createElement("a");
 				pageStatEntry.classList.add("greetmaster-sidebar-entry", "greetmaster-stat-entry");
 				const pageStatEntryName = document.createElement("div");
@@ -68,7 +68,7 @@ function loadSidebar() {
 					: statEntryName.replace(/<br>/gi, "\n").replace(/\n+/g, "\n");
 				const pageStatEntryCount = document.createElement("div");
 				pageStatEntryCount.className = "greetmaster-sidebar-entry-right";
-				pageStatEntryCount.textContent = statEntries[statEntryName].toLocaleString();
+				pageStatEntryCount.textContent = statEntryCount.toLocaleString();
 				pageStatEntry.append(pageStatEntryName, pageStatEntryCount);
 				if (filterParams.getAll(filter).some(filterValue => statEntryName.toLowerCase() == filterValue.toLowerCase())) {
 					const newFilterParams = new URLSearchParams(filterParams);

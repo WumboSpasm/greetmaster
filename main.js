@@ -331,10 +331,6 @@ const serverHandler = (request, info) => {
 					statsList.total++;
 				}
 			}
-			for (const field in statsList) {
-				if (field == "total") continue;
-				statsList[field] = Object.fromEntries(Object.entries(statsList[field]).toSorted(([,a], [,b]) => b - a));
-			}
 			return new Response(JSON.stringify(statsList), { headers: { "Content-Type": "application/json; charset=UTF-8" } });
 		}
 		case "random": {
