@@ -81,7 +81,7 @@ async function prepareFlash(greetingContent, greetingOverlay) {
 async function prepareEmu(greetingContent, greetingOverlay) {
 	if (greetingContent.id != "greetmaster-emu-container") return;
 	await Promise.all([
-		loadScript("https://v8.js-dos.com/latest/js-dos.js"),
+		loadScript("/emu/js-dos.js"),
 		loadScript("/emu/zip-fs-full.min.js"),
 	]);
 	const emuPlaceholder = greetingContent.querySelector("#greetmaster-emu-placeholder");
@@ -103,6 +103,7 @@ async function prepareEmu(greetingContent, greetingOverlay) {
 	greetingOverlay.addEventListener("click", () => {
 		Dos(emuPlaceholder, {
 			url: zipUrl,
+			pathPrefix: "/emu/",
 			kiosk: true,
 			noCloud: true,
 			autoStart: true,
