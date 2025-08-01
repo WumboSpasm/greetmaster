@@ -75,6 +75,13 @@ const filters = {
 	"type": (greeting, value) => greeting.types.includes(value),
 };
 
+const globalStats = getStats(new URLSearchParams(), true);
+const statTitles = Object.values(greetings).reduce((statTitles, greeting) => {
+	for (const title of greeting.titles)
+		statTitles[title] = (statTitles[title] ?? 0) + 1;
+	return statTitles;
+}, {});
+
 const urlExps = [/((?:href|src|action|background) *= *)("(?:(?!>).)+?"|[^ >]+)/gis, /(url *)(\(.+?\))/gis];
 
 // Handle server requests
@@ -277,49 +284,7 @@ const serverHandler = (request, info) => {
 			return new Response(JSON.stringify(greetingList), { headers: { "Content-Type": "application/json; charset=UTF-8" } });
 		}
 		case "stats": {
-			const statsList = { total: -1 };
-			const statFields = ["titles", "categories", "sources", "types"];
-			for (const field of statFields) statsList[field] = {};
-			const incrementStat = (stat, field) => {
-				if (statsList[stat][field] === undefined)
-					statsList[stat][field] = 1;
-				else
-					statsList[stat][field]++;
-			};
-			if (params.has("id")) {
-				const compareGreeting = greetings[parseInt(params.get("id"))];
-				if (validGreeting(compareGreeting)) {
-					for (const id in greetings) {
-						const greeting = greetings[id];
-						if (!validGreeting(greeting)) continue;
-						for (const field of statFields) {
-							for (const value of greeting[field]) {
-								if (compareGreeting[field].includes(value))
-									incrementStat(field, value);
-							}
-						}
-					}
-				}
-			}
-			else {
-				const requestFilters = getRequestFilters(params);
-				statsList.total = 0;
-				listBuilder:
-				for (const id in greetings) {
-					const greeting = greetings[id];
-					if (!validGreeting(greeting)) continue;
-					for (const [filterKey, filterValue] of requestFilters) {
-						if (!filters[filterKey](greeting, filterValue))
-							continue listBuilder;
-					}
-					for (const field of statFields) {
-						if (field == "titles") continue;
-						for (const value of greeting[field])
-							incrementStat(field, value);
-					}
-					statsList.total++;
-				}
-			}
+			const statsList = params.toString() == "" ? globalStats : getStats(params);
 			return new Response(JSON.stringify(statsList), { headers: { "Content-Type": "application/json; charset=UTF-8" } });
 		}
 		case "random": {
@@ -505,6 +470,48 @@ function getPageData(page) {
 		bodyContent = `<div id="greetmaster-midi-placeholder" ${midiAttrString}></div>\n` + newBodyContent + bodyContent;
 	}
 	return [bodyContent, styleElement];
+}
+
+// Gather statistics for e-card properties
+function getStats(params) {
+	const statsList = {
+		titles: {},
+		categories: {},
+		sources: {},
+		types: {},
+	};
+	const incrementStat = (field, value) => statsList[field][value] = (statsList[field][value] ?? 0) + 1;
+	if (params.has("id")) {
+		const compareGreeting = greetings[parseInt(params.get("id"))];
+		if (validGreeting(compareGreeting)) {
+			for (const field in statsList) {
+				for (const value of compareGreeting[field])
+					statsList[field][value] = field == "titles" ? statTitles[value] : globalStats[field][value];
+			}
+		}
+		statsList.total = -1;
+	}
+	else {
+		const requestFilters = params.toString() != "" ? getRequestFilters(params) : [];
+		let statsTotal = 0;
+		listBuilder:
+		for (const id in greetings) {
+			const greeting = greetings[id];
+			if (!validGreeting(greeting)) continue;
+			for (const [filterKey, filterValue] of requestFilters) {
+				if (!filters[filterKey](greeting, filterValue))
+					continue listBuilder;
+			}
+			for (const field in statsList) {
+				if (field == "titles") continue;
+				for (const value of greeting[field])
+					incrementStat(field, value);
+			}
+			statsTotal++;
+		}
+		statsList.total = statsTotal;
+	}
+	return statsList;
 }
 
 // Build HTML by filling template with supplied variables
