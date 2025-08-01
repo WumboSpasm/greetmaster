@@ -65,14 +65,14 @@ const supportedTypes = [
 	//"Create & Print Card",
 ];
 
-const fields = ["titles", "categories", "sources", "type", "thumbnail", "files"];
+const fields = ["titles", "categories", "sources", "types", "thumbnail", "files"];
 
 const filters = {
 	"search": (greeting, value) => greeting.titles.concat(greeting.categories).some(entry => entry.toLowerCase().replace("<br>", " ").includes(value.toLowerCase())),
 	"title": (greeting, value) => greeting.titles.includes(value),
 	"category": (greeting, value) => greeting.categories.includes(value),
 	"source": (greeting, value) => greeting.sources.includes(value),
-	"type": (greeting, value) => greeting.type == value,
+	"type": (greeting, value) => greeting.types.includes(value),
 };
 
 const urlExps = [/((?:href|src|action|background) *= *)("(?:(?!>).)+?"|[^ >]+)/gis, /(url *)(\(.+?\))/gis];
@@ -140,7 +140,7 @@ const serverHandler = (request, info) => {
 					mainVars["SHOWNAV"] = false;
 				}
 				else {
-					mainVars["TITLE"] = `${greeting.type} at Greetmaster`;
+					mainVars["TITLE"] = `${greeting.types[0]} at Greetmaster`;
 					if (greeting.titles.length > 0)
 						mainVars["TITLE"] = `${greeting.titles[0].replace(/<br>/i, " ")} - ${mainVars["TITLE"]}`;
 					if (greeting.thumbnail != "")
@@ -152,7 +152,7 @@ const serverHandler = (request, info) => {
 				mainVars["PAGESCRIPT"] = "greeting.js";
 				const greetingVars = {
 					"STYLE": "",
-					"TYPE": greeting.type,
+					"TYPE": greeting.types[0],
 					"BODY":  "",
 					"LINKS": "",
 				};
@@ -192,7 +192,7 @@ const serverHandler = (request, info) => {
 					}
 				}
 				if (!embed) {
-					if (greeting.type == "Screensaver Preview") {
+					if (greeting.types.includes("Screensaver Preview")) {
 						const screensavers = {
 							"Windows": greeting.files.find(path => /\.exe$/.test(path)),
 							"MacOS": greeting.files.find(path => /\.zip$/.test(path)),
@@ -206,7 +206,7 @@ const serverHandler = (request, info) => {
 						if (screensaverLinks.length > 0)
 							greetingVars["LINKS"] = screensaverLinks.join(",&nbsp;\n");
 					}
-					else if (greeting.type == "Wallpaper Preview") {
+					else if (greeting.types.includes("Wallpaper Preview")) {
 						const wallpapers = {
 							"640x480": greeting.files.find(path => /640x480\.jpg$/.test(path)) ?? greeting.files.find(path => /640x480\.gif$/.test(path)),
 							"800x600": greeting.files.find(path => /800x600\.jpg$/.test(path)) ?? greeting.files.find(path => /800x600\.gif$/.test(path)),
@@ -278,12 +278,8 @@ const serverHandler = (request, info) => {
 		}
 		case "stats": {
 			const statsList = { total: -1 };
-			const statFields = {
-				array: ["titles", "categories", "sources"],
-				single: [["type", "types"]],
-			};
-			for (const field of statFields.array) statsList[field] = {};
-			for (const field of statFields.single) statsList[field[1]] = {};
+			const statFields = ["titles", "categories", "sources", "types"];
+			for (const field of statFields) statsList[field] = {};
 			const incrementStat = (stat, field) => {
 				if (statsList[stat][field] === undefined)
 					statsList[stat][field] = 1;
@@ -296,15 +292,11 @@ const serverHandler = (request, info) => {
 					for (const id in greetings) {
 						const greeting = greetings[id];
 						if (!validGreeting(greeting)) continue;
-						for (const field of statFields.array) {
+						for (const field of statFields) {
 							for (const value of greeting[field]) {
 								if (compareGreeting[field].includes(value))
 									incrementStat(field, value);
 							}
-						}
-						for (const field of statFields.single) {
-							if (filters[field[0]](compareGreeting, greeting[field[0]]))
-								incrementStat(field[1], greeting[field[0]]);
 						}
 					}
 				}
@@ -320,13 +312,11 @@ const serverHandler = (request, info) => {
 						if (!filters[filterKey](greeting, filterValue))
 							continue listBuilder;
 					}
-					for (const field of statFields.array) {
+					for (const field of statFields) {
 						if (field == "titles") continue;
 						for (const value of greeting[field])
 							incrementStat(field, value);
 					}
-					for (const field of statFields.single)
-						incrementStat(field[1], greeting[field[0]]);
 					statsList.total++;
 				}
 			}
@@ -346,8 +336,8 @@ const serverHandler = (request, info) => {
 		default: {
 			if (!requestPath.startsWith("data/")) requestPath = `static/${requestPath}`;
 			if (!getPathInfo(requestPath)?.isFile) throw new NotFoundError();
-			const type = contentType(requestPath.substring(requestPath.lastIndexOf("."))) ?? "application/octet-stream";
-			return new Response(Deno.openSync(requestPath).readable, { headers: { "Content-Type": type }});
+			const responseType = contentType(requestPath.substring(requestPath.lastIndexOf("."))) ?? "application/octet-stream";
+			return new Response(Deno.openSync(requestPath).readable, { headers: { "Content-Type": responseType }});
 		}
 	}
 };
@@ -560,7 +550,7 @@ function getRequestFilters(params) {
 }
 
 // Check if greeting is available and of a supported type
-function validGreeting(greeting) { return greeting !== undefined && greeting.available && supportedTypes.includes(greeting.type); }
+function validGreeting(greeting) { return greeting !== undefined && greeting.available && greeting.types.some(type => supportedTypes.includes(type)); }
 
 // Return contents of template files
 function getTemplate(file) { return Deno.readTextFileSync(`templates/${file}`); }
