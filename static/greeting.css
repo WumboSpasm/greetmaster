@@ -86,15 +86,15 @@
 #greetmaster-html-container #agi-asset {
 	text-align: center;
 }
-#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="creataMailTemplate"] {
+#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="CreataMail Template"] {
 	min-height: 480px;
 	overflow: hidden;
 }
-#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="creataMailTemplate"] > div {
+#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="CreataMail Template"] > div {
 	z-index: 0;
 	box-sizing: border-box;
 }
-#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="creataMailTemplate"] div:has(> table) {
+#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="CreataMail Template"] div:has(> table) {
 	box-sizing: border-box;
 }
 #greetmaster-emu-placeholder {
