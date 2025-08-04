@@ -1,7 +1,7 @@
 const params = new URL(location.href).searchParams;
 
 const filterParams = (() => {
-	const validFilters = ["search", "title", "category", "source", "type", "date"];
+	const validFilters = ["search", "title", "category", "source", "type"];
 	const paramKeys = [...params.keys()];
 	const paramValues = [...params.values()];
 	const filters = paramKeys

@@ -21,16 +21,18 @@ function loadSidebar() {
 		localStorage.setItem("greetmaster-sidebar-hidden", hidden ? "true" : "false");
 	});
 	let statsUrl = "/stats";
-	if (params.has("id"))
-		statsUrl += `?id=${params.get("id")}`;
-	else if (filterParamsString != "")
-		statsUrl += `?${filterParamsString}`;
+	if (location.pathname == "/") {
+		if (params.has("id"))
+			statsUrl += `?id=${params.get("id")}`;
+		else if (filterParamsString != "")
+			statsUrl += `?${filterParamsString}`;
+	}
 	fetch(statsUrl).then(response => response.json()).then(stats => {
+		const honorParams = location.pathname == "/" && filterParamsString != "" && !params.has("id");
 		for (const [filter, stat, displayName] of fieldMap) {
 			if (stats[stat] === undefined) stats[stat] = {};
-			const filterValues = filterParams.getAll(filter);
-			if (filterValues.length > 0) {
-				for (const filterValue of filterValues) {
+			if (honorParams) {
+				for (const filterValue of filterParams.getAll(filter)) {
 					const filterValueLower = filterValue.toLowerCase()
 					if (Object.keys(stats[stat]).find(statEntryName => filterValueLower == statEntryName.toLowerCase()) === undefined)
 						stats[stat][filterValue] = stats.total;
@@ -49,7 +51,7 @@ function loadSidebar() {
 				pageStatEntryCount.className = "greetmaster-sidebar-entry-right";
 				pageStatEntryCount.textContent = statEntryCount.toLocaleString();
 				pageStatEntry.append(pageStatEntryName, pageStatEntryCount);
-				if (filterParams.getAll(filter).some(filterValue => statEntryName.toLowerCase() == filterValue.toLowerCase())) {
+				if (honorParams && filterParams.getAll(filter).some(filterValue => statEntryName.toLowerCase() == filterValue.toLowerCase())) {
 					const newFilterParams = new URLSearchParams(filterParams);
 					newFilterParams.delete(filter, statEntryName);
 					const newFilterParamsString = newFilterParams.toString();
@@ -59,7 +61,7 @@ function loadSidebar() {
 				}
 				else {
 					let statEntryParamsString = new URLSearchParams([[filter, statEntryName]]).toString();
-					if (filterParamsString != "") statEntryParamsString = `${filterParamsString}&${statEntryParamsString}`;
+					if (honorParams) statEntryParamsString = `${filterParamsString}&${statEntryParamsString}`;
 					pageStatEntry.href = `/?${statEntryParamsString}`;
 					pageStatEntries.append(pageStatEntry);
 				}
