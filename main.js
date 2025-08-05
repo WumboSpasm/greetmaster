@@ -142,7 +142,7 @@ const serverHandler = (request, info) => {
 				};
 				if (greeting.htmlPath != "") {
 					greetingVars["STYLE"] = "greetmaster-html-container";
-					[greetingVars["BODY"], mainVars["STYLE"]] = getPageData(redirectLinks(getPage(greeting), greeting.htmlPath));
+					[greetingVars["BODY"], mainVars["STYLE"]] = preparePage(greeting);
 					greetingVars["BODY"] = `<!--${greetingVars["BODY"].replaceAll("<!--", "&lt;!--").replaceAll("-->", "--&gt;")}-->`;
 				}
 				else {
@@ -322,6 +322,7 @@ if (config.httpsPort && config.httpsCert && config.httpsKey)
 		onError: serverError,
 	}, serverHandler);
 
+// Get page content as UTF-encoded string
 function getPage(greeting) {
 	const pagePath = greeting.htmlPath;
 	const pageEncoding = greeting.extraVars.encoding;
@@ -331,6 +332,7 @@ function getPage(greeting) {
 	return page.replaceAll(/[\r\n]+/g, "\n");
 }
 
+// Rewrite in-page links to stay within site
 function redirectLinks(page, pagePath) {
 	const urlData = [];
 	for (let i = 0; i < urlExps.length; i++) {
@@ -358,9 +360,10 @@ function redirectLinks(page, pagePath) {
 	return newPage + page;
 }
 
-function getPageData(page) {
+// Return page data that is prepared to be injected into greeting template
+function preparePage(greeting) {
 	const attrExp = /([a-z]+) *= *("(?:(?!>).)+?"|[^ >]+)/gis;
-	let bodyContent = page;
+	let bodyContent = redirectLinks(getPage(greeting), greeting.htmlPath);
 	let styleElement = "";
 	const body = bodyContent.match(/(<body.*?>)\s*(.*?)\s*<\/body>/is);
 	if (body !== null) {
@@ -493,7 +496,7 @@ function getStats(params) {
 	return statsList;
 }
 
-// Build HTML by filling template with supplied variables
+// Safely fill HTML template with supplied variables
 function buildHtml(template, vars) {
 	const varData = [];
 	for (const [key, value] of Object.entries(vars)) {
