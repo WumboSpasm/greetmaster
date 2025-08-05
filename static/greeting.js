@@ -118,6 +118,50 @@ function loadScript(url) {
 	return new Promise(resolve => script.addEventListener("load", resolve));
 }
 
+function prepareEditableContent(greetingContent) {
+	const editableElements = greetingContent.querySelectorAll(".greetmaster-editable-content");
+	const editableFields = {};
+	for (const editableElement of editableElements) {
+		if (editableFields[editableElement.dataset.field] === undefined)
+			editableFields[editableElement.dataset.field] = editableElement.textContent;
+	}
+	function editableFocusEvent(event) {
+		if (event.target.innerHTML == event.target.dataset.field)
+			event.target.innerHTML = "<br>";
+		if (event.target.style.textAlign == "center")
+			event.target.style.textAlign = "unset";
+		editableInputEvent(event);
+	}
+	function editableUnfocusEvent(event) {
+		if (event.target.innerHTML == "<br>" || event.target.innerHTML == "") {
+			event.target.innerHTML = event.target.dataset.field;
+			event.target.style.textAlign = "center";
+		}
+		editableInputEvent(event);
+	}
+	function editablePasteEvent(event) {
+		event.preventDefault();
+		if (document.activeElement === event.target)
+			document.execCommand("insertText", false, event.clipboardData.getData("text"));
+	}
+	function editableInputEvent(event) {
+		for (const editableElement of editableElements) {
+			if (editableElement === event.target || editableElement.dataset.field != event.target.dataset.field) continue;
+			editableElement.innerHTML = event.target.innerHTML;
+			editableElement.style.textAlign = event.target.style.textAlign;
+		}
+		editableFields[event.target.dataset.field] = event.target.textContent;
+	}
+	for (const editableElement of editableElements) {
+		editableElement.addEventListener("focus", editableFocusEvent);
+		editableElement.addEventListener("blur", editableUnfocusEvent);
+		editableElement.addEventListener("paste", editablePasteEvent);
+		editableElement.addEventListener("input", editableInputEvent);
+		editableElement.style.minWidth = `${editableElement.offsetWidth}px`;
+		editableElement.style.textAlign = "center";
+	}
+}
+
 function uncommentHtml(greetingContent) {
 	const greetingHtml = greetingContent.innerHTML.trim().replaceAll("&lt;!--", "<!--").replaceAll("--&gt;", "-->");
 	greetingContent.innerHTML = greetingHtml.substring(4, greetingHtml.length - 3);
@@ -131,6 +175,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 			prepareHtml(greetingContent, greetingOverlay);
 		else if (greetingContent.id == "greetmaster-html-container")
 			uncommentHtml(greetingContent);
+		prepareEditableContent(greetingContent);
 		await prepareMidi(greetingContent, greetingOverlay);
 		await prepareFlash(greetingContent, greetingOverlay);
 		await prepareEmu(greetingContent, greetingOverlay);

@@ -451,6 +451,7 @@ function preparePage(greeting) {
 		const midiAttrString = Object.entries(midiAttrs).map(attr => `data-${attr[0]}="${attr[1]}"`).join(" ");
 		bodyContent = `<div id="greetmaster-midi-placeholder" ${midiAttrString}></div>\n` + newBodyContent + bodyContent;
 	}
+	bodyContent = bodyContent.replaceAll(/\[([a-z ]+)\]/gi, `<span class="greetmaster-editable-content" contenteditable="true" data-field="$1">$1</span>`);
 	return [bodyContent, styleElement];
 }
 

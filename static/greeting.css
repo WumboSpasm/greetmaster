@@ -69,6 +69,18 @@
 	flex-grow: 1;
 }
 
+/* Editable content */
+
+.greetmaster-editable-content {
+	padding: 0 2px;
+	display: inline-block;
+	box-shadow: 0 0 0 1px;
+}
+.greetmaster-editable-content:focus {
+	background-color: #ff05;
+	outline: none;
+}
+
 /* Content-specific styles */
 
 #greetmaster-html-container {
