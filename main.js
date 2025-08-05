@@ -12,7 +12,6 @@ const config = {
 	blockedIPs: [],
 	blockedUAs: [],
 	greetingIndex: "greetings.json",
-	filesystemIndex: "files.json",
 	logFile: "server.log",
 	logToConsole: true,
 	logBlockedRequests: true,
@@ -43,29 +42,7 @@ if (getPathInfo(flags["config"])?.isFile) {
 const greetings = JSON.parse(Deno.readTextFileSync(config.greetingIndex));
 logMessage(`loaded greeting index: ${Deno.realPathSync(config.greetingIndex)}`);
 
-const filesystem = JSON.parse(Deno.readTextFileSync(config.filesystemIndex));
-logMessage(`loaded filesystem index: ${Deno.realPathSync(config.filesystemIndex)}`);
-
-const supportedTypes = [
-	"Flash E-Card",
-	"HTML E-Card",
-	"Animated Text E-Card",
-	"Photo/Video E-Card",
-	"Image E-Card",
-	"Downloadable E-Card",
-	"Java E-Card",
-	"Shockwave E-Card",
-	//"Wallpaper",
-	"Wallpaper Preview",
-	"Screensaver Preview",
-	"CreataMail Template",
-	//"CreataMail Clip Art",
-	//"CreataMail Icon",
-	//"CreataMail Audio",
-	//"Create & Print Card",
-];
-
-const fields = ["titles", "categories", "sources", "types", "thumbnail", "files"];
+const fields = ["titles", "categories", "sources", "types", "htmlPath", "contentPath", "thumbnailPath"];
 
 const filters = {
 	"search": (greeting, value) => greeting.titles.concat(greeting.categories).some(entry => entry.toLowerCase().replace("<br>", " ").includes(value.toLowerCase())),
@@ -141,7 +118,7 @@ const serverHandler = (request, info) => {
 			else if (params.has("id")) {
 				const id = params.get("id");
 				const greeting = greetings[id];
-				if (!validGreeting(greeting)) throw new BadRequestError();
+				if (greeting === undefined) throw new BadRequestError();
 				if (embed) {
 					mainVars["TITLE"] = "E-Card at Greetmaster";
 					mainVars["SHOWNAV"] = false;
@@ -150,7 +127,7 @@ const serverHandler = (request, info) => {
 					mainVars["TITLE"] = `${greeting.types[0]} at Greetmaster`;
 					if (greeting.titles.length > 0)
 						mainVars["TITLE"] = `${greeting.titles[0].replace(/<br>/i, " ")} - ${mainVars["TITLE"]}`;
-					if (greeting.thumbnail != "")
+					if (greeting.thumbnailPath != "")
 						mainVars["OGIMAGE"] = `${requestUrl.origin}/data/thumbs/${id.substring(0, 4)}/${id}.png`;
 					mainVars["NOINDEX"] = false;
 				}
@@ -163,46 +140,49 @@ const serverHandler = (request, info) => {
 					"BODY":  "",
 					"LINKS": "",
 				};
-				let greetingPath;
-				if ((greetingPath = greeting.files.find(path => /\.html$/.test(path))) !== undefined) {
+				if (greeting.htmlPath != "") {
 					greetingVars["STYLE"] = "greetmaster-html-container";
-					[greetingVars["BODY"], mainVars["STYLE"]] = getPageData(redirectLinks(getPage(greetingPath), greetingPath));
+					[greetingVars["BODY"], mainVars["STYLE"]] = getPageData(redirectLinks(getPage(greeting), greeting.htmlPath));
 					greetingVars["BODY"] = `<!--${greetingVars["BODY"].replaceAll("<!--", "&lt;!--").replaceAll("-->", "--&gt;")}-->`;
 				}
-				else if ((greetingPath = greeting.files.find(path => /\.sw[ft]$/.test(path))) !== undefined) {
-					greetingVars["STYLE"] = "greetmaster-flash-container";
-					greetingVars["BODY"] = "strFlashHTML";
-				}
-				else if ((greetingPath = greeting.files.find(path => /\/product\/full\/\d{7}f\.gif$/.test(path))) !== undefined) {
-					greetingVars["STYLE"] = "greetmaster-image-container";
-					greetingVars["BODY"] = `<img src="/data/${greetingPath}">`;
-				}
-				else if ((greetingPath = greeting.files.find(path => [/\/product\/preview\/slideshows\/exe\/\d{7}f\.exe$/, /\.dcr$/].some(pathExp => pathExp.test(path)))) !== undefined) {
-					greetingVars["STYLE"] = "greetmaster-emu-container";
-					greetingVars["BODY"] = `<div id="greetmaster-emu-placeholder" data-src="/data/${greetingPath}"></div>`;
-				}
 				else {
-					greetingVars["STYLE"] = "greetmaster-unsupported-container";
-					greetingVars["BODY"] = "Unfortunately, this e-card is currently not supported.";
-				}
-				if (greetingVars["BODY"].includes("strFlashHTML")) {
-					const flashPath = greeting.files.find(path => /\.swf$/.test(path)) ?? greeting.files.find(path => /\.swt$/.test(path));
-					if (flashPath !== undefined) {
-						const flashInfo = filesystem[flashPath];
-						const flashAttrString = [
-							`data-src="/data/${flashPath}"`,
-							`data-width="${flashInfo.width}"`,
-							`data-height="${flashInfo.height}"`,
-							`data-protected="${flashInfo.protected}"`,
-						].join(" ");
-						greetingVars["BODY"] = greetingVars["BODY"].replace("strFlashHTML", `<div id="greetmaster-flash-placeholder" ${flashAttrString}></div>`);
+					switch (greeting.types[0]) {
+						case "Flash E-Card": {
+							greetingVars["STYLE"] = "greetmaster-flash-container";
+							greetingVars["BODY"] = "strFlashHTML";
+							break;
+						}
+						case "Image E-Card": {
+							greetingVars["STYLE"] = "greetmaster-image-container";
+							greetingVars["BODY"] = `<img src="/data/${greeting.contentPath}">`;
+							break;
+						}
+						case "Downloadable E-Card":
+						case "Shockwave E-Card": {
+							greetingVars["STYLE"] = "greetmaster-emu-container";
+							greetingVars["BODY"] = `<div id="greetmaster-emu-placeholder" data-src="/data/${greeting.contentPath}"></div>`;
+							break;
+						}
+						default: {
+							greetingVars["STYLE"] = "greetmaster-unsupported-container";
+							greetingVars["BODY"] = "Unfortunately, this e-card is currently not supported.";
+						}
 					}
 				}
+				if (greeting.contentPath != "" && greetingVars["BODY"].includes("strFlashHTML")) {
+					const flashAttrString = [
+						`data-src="/data/${greeting.contentPath}"`,
+						`data-width="${greeting.extraVars.width}"`,
+						`data-height="${greeting.extraVars.height}"`,
+						`data-protected="${greeting.extraVars.protected}"`,
+					].join(" ");
+					greetingVars["BODY"] = greetingVars["BODY"].replace("strFlashHTML", `<div id="greetmaster-flash-placeholder" ${flashAttrString}></div>`);
+				}
 				if (!embed) {
-					if (greeting.types.includes("Screensaver Preview")) {
+					if (greeting.types[0] == "Screensaver Preview") {
 						const screensavers = {
-							"Windows": greeting.files.find(path => /\.exe$/.test(path)),
-							"MacOS": greeting.files.find(path => /\.zip$/.test(path)),
+							"Windows": greeting.extraVars.windowsPath,
+							"MacOS": greeting.extraVars.macPath,
 						};
 						const screensaverLinks = [];
 						for (const platform in screensavers) {
@@ -213,12 +193,12 @@ const serverHandler = (request, info) => {
 						if (screensaverLinks.length > 0)
 							greetingVars["LINKS"] = screensaverLinks.join(",&nbsp;\n");
 					}
-					else if (greeting.types.includes("Wallpaper Preview")) {
+					else if (greeting.types[0] == "Wallpaper Preview") {
 						const wallpapers = {
-							"640x480": greeting.files.find(path => /640x480\.jpg$/.test(path)) ?? greeting.files.find(path => /640x480\.gif$/.test(path)),
-							"800x600": greeting.files.find(path => /800x600\.jpg$/.test(path)) ?? greeting.files.find(path => /800x600\.gif$/.test(path)),
-							"1024x768": greeting.files.find(path => /1024x768\.jpg$/.test(path)) ?? greeting.files.find(path => /1024x768\.gif$/.test(path)),
-							"1280x1024": greeting.files.find(path => /1280x1024\.jpg$/.test(path)),
+							"640x480": greeting.extraVars.smallPath,
+							"800x600": greeting.extraVars.mediumPath,
+							"1024x768": greeting.extraVars.largePath,
+							"1280x1024": greeting.extraVars.extraLargePath,
 						};
 						const wallpaperLinks = [];
 						for (const size in wallpapers) {
@@ -252,7 +232,7 @@ const serverHandler = (request, info) => {
 			if (params.has("id")) {
 				const id = params.get("id");
 				const greeting = greetings[id];
-				if (validGreeting(greeting)) {
+				if (greeting !== undefined) {
 					greetingList[id] = {};
 					for (const field of requestFields)
 						greetingList[id][field] = greeting[field];
@@ -267,7 +247,7 @@ const serverHandler = (request, info) => {
 					let skipped = 0;
 					for (const id in greetings) {
 						const greeting = greetings[id];
-						if (!validGreeting(greeting) || requestFilters.some(([key, value]) => !filters[key](greeting, value)))
+						if (greeting === undefined || requestFilters.some(([key, value]) => !filters[key](greeting, value)))
 							continue;
 						if (added >= count) break;
 						if (skipped < offset)
@@ -292,7 +272,7 @@ const serverHandler = (request, info) => {
 			const requestFilters = getRequestFilters(params);
 			for (const id in greetings) {
 				const greeting = greetings[id];
-				if (validGreeting(greeting) && requestFilters.every(([key, value]) => filters[key](greeting, value)))
+				if (greeting !== undefined && requestFilters.every(([key, value]) => filters[key](greeting, value)))
 					randomList.push(id);
 			}
 			const randomId = randomList[Math.floor(Math.random() * randomList.length)];
@@ -342,13 +322,12 @@ if (config.httpsPort && config.httpsCert && config.httpsKey)
 		onError: serverError,
 	}, serverHandler);
 
-function getPage(pagePath) {
-	let page;
-	const pageEncoding = filesystem[pagePath].encoding;
-	if (pageEncoding == "ASCII" || pageEncoding == "UTF-8")
-		page = Deno.readTextFileSync(`data/${pagePath}`);
-	else
-		page = new TextDecoder().decode(new Deno.Command("iconv", { args: [`data/${pagePath}`, "-cf", pageEncoding, "-t", "UTF-8"], stdout: "piped" }).outputSync().stdout);
+function getPage(greeting) {
+	const pagePath = greeting.htmlPath;
+	const pageEncoding = greeting.extraVars.encoding;
+	const page = pageEncoding == "ASCII" || pageEncoding == "UTF-8"
+		? Deno.readTextFileSync(`data/${pagePath}`)
+		: new TextDecoder().decode(new Deno.Command("iconv", { args: [`data/${pagePath}`, "-cf", pageEncoding, "-t", "UTF-8"], stdout: "piped" }).outputSync().stdout);
 	return page.replaceAll(/[\r\n]+/g, "\n");
 }
 
@@ -483,7 +462,7 @@ function getStats(params) {
 	const incrementStat = (field, value) => statsList[field][value] = (statsList[field][value] ?? 0) + 1;
 	if (params.has("id")) {
 		const compareGreeting = greetings[parseInt(params.get("id"))];
-		if (validGreeting(compareGreeting)) {
+		if (compareGreeting !== undefined) {
 			for (const field in statsList) {
 				for (const value of compareGreeting[field])
 					statsList[field][value] = field == "titles" ? statTitles[value] : globalStats[field][value];
@@ -497,7 +476,7 @@ function getStats(params) {
 		listBuilder:
 		for (const id in greetings) {
 			const greeting = greetings[id];
-			if (!validGreeting(greeting)) continue;
+			if (greeting === undefined) continue;
 			for (const [filterKey, filterValue] of requestFilters) {
 				if (!filters[filterKey](greeting, filterValue))
 					continue listBuilder;
@@ -555,9 +534,6 @@ function getRequestFilters(params) {
 		.slice(0, 16);
 	return requestFilters;
 }
-
-// Check if greeting is available and of a supported type
-function validGreeting(greeting) { return greeting !== undefined && greeting.available && greeting.types.some(type => supportedTypes.includes(type)); }
 
 // Return contents of template files
 function getTemplate(file) { return Deno.readTextFileSync(`templates/${file}`); }

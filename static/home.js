@@ -30,7 +30,7 @@ const thumbObserver = new IntersectionObserver((entries, observer) => {
 function loadThumbs(thumbRemainder) {
 	loadingThumbs = true;
 	const thumbAmount = (getVisibleThumbRows() + thumbLoadBuffer) * getThumbColumns() + thumbRemainder;
-	let getUrl = `/get?count=${thumbAmount}&offset=${thumbsLoaded}&field=titles&field=thumbnail`;
+	let getUrl = `/get?count=${thumbAmount}&offset=${thumbsLoaded}&field=titles&field=thumbnailPath`;
 	if (filterParamsString != "") getUrl += `&${filterParamsString}`;
 	fetch(getUrl).then(response => response.json()).then(greetings => {
 		const realThumbAmount = Object.keys(greetings).length;
@@ -40,7 +40,7 @@ function loadThumbs(thumbRemainder) {
 			link.id = "greetmaster-thumbnail";
 			link.setAttribute("href", `/?id=${id}`);
 			const thumb = document.createElement("img");
-			thumb.dataset.src = greetings[id].thumbnail != "" ? `/data/thumbs/${Math.floor(id / 1000)}/${id}.webp` : "/data/thumbs/nothumb.webp";
+			thumb.dataset.src = greetings[id].thumbnailPath != "" ? `/data/thumbs/${Math.floor(id / 1000)}/${id}.webp` : "/data/thumbs/nothumb.webp";
 			thumb.src = defaultSrc;
 			thumb.setAttribute("width", thumbWidth);
 			thumb.setAttribute("height", thumbHeight);
