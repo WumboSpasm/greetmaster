@@ -22,7 +22,6 @@ const templates = {
 	main:			getTemplate("main.html"),
 	mainNavigation:	getTemplate("main_navigation.html"),
 	greeting:		getTemplate("greeting.html"),
-	greetingEmbed:	getTemplate("greeting_embed.html"),
 	about:			getTemplate("about.html"),
 	error:			getTemplate("error.html"),
 };
@@ -138,12 +137,14 @@ const serverHandler = (request, info) => {
 					"STYLE": "",
 					"TYPE": greeting.types[0],
 					"BODY":  "",
+					"SIZEBUTTON": false,
 					"LINKS": "",
 				};
 				if (greeting.htmlPath != "") {
 					greetingVars["STYLE"] = "greetmaster-html-container";
 					[greetingVars["BODY"], mainVars["STYLE"]] = preparePage(greeting);
 					greetingVars["BODY"] = `<!--${greetingVars["BODY"].replaceAll("<!--", "&lt;!--").replaceAll("-->", "--&gt;")}-->`;
+					greetingVars["SIZEBUTTON"] = true;
 				}
 				else {
 					switch (greeting.types[0]) {
@@ -164,8 +165,7 @@ const serverHandler = (request, info) => {
 							break;
 						}
 						default: {
-							greetingVars["STYLE"] = "greetmaster-unsupported-container";
-							greetingVars["BODY"] = "Unfortunately, this e-card is currently not supported.";
+							throw new BadRequestError();
 						}
 					}
 				}
@@ -178,41 +178,19 @@ const serverHandler = (request, info) => {
 					].join(" ");
 					greetingVars["BODY"] = greetingVars["BODY"].replace("strFlashHTML", `<div id="greetmaster-flash-placeholder" ${flashAttrString}></div>`);
 				}
-				if (!embed) {
-					if (greeting.types[0] == "Screensaver Preview") {
-						const screensavers = {
-							"Windows": greeting.extraVars.windowsPath,
-							"MacOS": greeting.extraVars.macPath,
-						};
-						const screensaverLinks = [];
-						for (const platform in screensavers) {
-							const screensaverPath = screensavers[platform];
-							if (screensaverPath !== undefined)
-								screensaverLinks.push(`<a class="greetmaster-greeting-footer-button" href="/data/${screensaverPath}">${platform}</a>`);
-						}
-						if (screensaverLinks.length > 0)
-							greetingVars["LINKS"] = screensaverLinks.join(",&nbsp;\n");
-					}
-					else if (greeting.types[0] == "Wallpaper Preview") {
-						const wallpapers = {
-							"640x480": greeting.extraVars.smallPath,
-							"800x600": greeting.extraVars.mediumPath,
-							"1024x768": greeting.extraVars.largePath,
-							"1280x1024": greeting.extraVars.extraLargePath,
-						};
-						const wallpaperLinks = [];
-						for (const size in wallpapers) {
-							const wallpaperPath = wallpapers[size];
-							if (wallpaperPath !== undefined)
-								wallpaperLinks.push(`<a class="greetmaster-greeting-footer-button" href="/data/${wallpaperPath}" target="_blank">${size}</a>`);
-						}
-						if (wallpaperLinks.length > 0)
-							greetingVars["LINKS"] = wallpaperLinks.join(",&nbsp;\n");
-					}
-					if (greetingVars["LINKS"] != "")
-						greetingVars["LINKS"] = `<div class="greetmaster-greeting-footer-section">Downloads:</div>&nbsp;\n${greetingVars["LINKS"]}`;
-				}
-				mainVars["CONTENT"] = buildHtml(embed ? templates.greetingEmbed : templates.greeting, greetingVars);
+				if (greeting.types[0] == "Wallpaper Preview")
+					greetingVars["LINKS"] = buildDownloads({
+						"640x480": greeting.extraVars.smallPath,
+						"800x600": greeting.extraVars.mediumPath,
+						"1024x768": greeting.extraVars.largePath,
+						"1280x1024": greeting.extraVars.extraLargePath,
+					});
+				else if (greeting.types[0] == "Screensaver Preview")
+					greetingVars["LINKS"] = buildDownloads({
+						"Windows": greeting.extraVars.windowsPath,
+						"MacOS": greeting.extraVars.macPath,
+					});
+				mainVars["CONTENT"] = buildHtml(templates.greeting, greetingVars);
 			}
 			if (params.toString() == "")
 				mainVars["NOINDEX"] = false;
@@ -498,9 +476,9 @@ function getStats(params) {
 }
 
 // Safely fill HTML template with supplied variables
-function buildHtml(template, vars) {
+function buildHtml(template, definitions) {
 	const varData = [];
-	for (const [key, value] of Object.entries(vars)) {
+	for (const [key, value] of Object.entries(definitions)) {
 		const keyExp = new RegExp(`(?:(^|\n)(\t*))?\\{${key}(?:\\?(.*?(?<!\\{VALUE)))?\\}`, "gs");
 		for (let match; (match = keyExp.exec(template)) !== null;) {
 			const newLine = match[1] ?? "";
@@ -526,6 +504,16 @@ function buildHtml(template, vars) {
 		offset = entry.end;
 	}
 	return html + template;
+}
+
+// Populate options bar with download links
+function buildDownloads(definitions) {
+	const downloadLinks = [];
+	for (const downloadTitle in definitions) {
+		const downloadPath = definitions[downloadTitle];
+		if (downloadPath !== undefined) downloadLinks.push(`<a class="greetmaster-greeting-options-button" href="/data/${downloadPath}">${downloadTitle}</a>`);
+	}
+	return downloadLinks.length > 0 ? `<div class="greetmaster-greeting-options-section">Downloads:</div>&nbsp;\n${downloadLinks.join(",&nbsp;\n")}` : "";
 }
 
 // Extract filters from query string

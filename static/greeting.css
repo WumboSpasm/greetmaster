@@ -1,11 +1,12 @@
 .greetmaster-content {
 	display: flex;
 	flex-direction: column;
-	align-items: center;
 }
 .greetmaster-greeting-container {
 	width: 100%;
+	margin-bottom: auto;
 	position: relative;
+	align-self: center;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -17,9 +18,6 @@
 .greetmaster-greeting-max-size,
 .greetmaster-greeting-max-size .greetmaster-greeting-content {
 	flex-grow: 1;
-}
-.greetmaster-greeting-embed {
-	overflow: auto;
 }
 .greetmaster-greeting-overlay {
 	position: absolute;
@@ -41,31 +39,28 @@
 	overflow: hidden;
 	visibility: hidden;
 }
-.greetmaster-greeting-footer {
+.greetmaster-greeting-options {
 	width: 100%;
 	background-color: var(--greetmaster-background-color-4);
-	padding: 4px 0;
+	padding: 4px 6px;
 	box-sizing: border-box;
 	position: sticky;
 	bottom: 0;
 	display: flex;
 }
-.greetmaster-greeting-max-size .greetmaster-greeting-footer {
-	padding: 4px 6px;
-}
-.greetmaster-greeting-footer-button {
+.greetmaster-greeting-options-button {
 	color: #fff;
 	text-decoration: none;
 	user-select: none;
 }
-.greetmaster-greeting-footer-button:hover {
+.greetmaster-greeting-options-button:hover {
 	text-decoration: underline;
 	cursor: pointer;
 }
-.greetmaster-greeting-footer-section {
+.greetmaster-greeting-options-section {
 	color: #fffd;
 }
-.greetmaster-greeting-footer-spacer {
+.greetmaster-greeting-options-spacer {
 	flex-grow: 1;
 }
 
@@ -121,11 +116,4 @@
 }
 #greetmaster-emu-placeholder div:not(:has(canvas)) {
 	display: none;
-}
-#greetmaster-unsupported-container {
-	width: 100%;
-	height: 320px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
 }

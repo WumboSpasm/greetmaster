@@ -1,6 +1,6 @@
-function prepareHtml(greetingContent, greetingOverlay) {
+function prepareSizeButton(greetingContent) {
 	const greetingContainer = greetingContent.parentElement;
-	const greetingSizeButton = greetingContainer.querySelector(".greetmaster-greeting-size-button");
+	const greetingSizeButton = greetingContainer.nextElementSibling.querySelector(".greetmaster-greeting-size-button");
 	if (greetingContent.id == "greetmaster-html-container" && localStorage.getItem("greetmaster-greeting-expanded") == "true") {
 		greetingSizeButton.textContent = "Shrink Content";
 		greetingContainer.classList.add("greetmaster-greeting-max-size");
@@ -9,19 +9,69 @@ function prepareHtml(greetingContent, greetingOverlay) {
 		greetingSizeButton.textContent = "Expand Content";
 		greetingContainer.classList.add("greetmaster-greeting-min-size");
 	}
-	if (greetingContent.id != "greetmaster-html-container") return;
-	uncommentHtml(greetingContent);
-	const greetingFooter = greetingContainer.querySelector(".greetmaster-greeting-footer");
-	greetingOverlay.addEventListener("click", () => {
-		greetingSizeButton.addEventListener("click", () => {
-			greetingContainer.classList.toggle("greetmaster-greeting-min-size");
-			greetingContainer.classList.toggle("greetmaster-greeting-max-size");
-			const expanded = greetingContainer.classList.contains("greetmaster-greeting-max-size");
-			greetingSizeButton.textContent = expanded ? "Shrink Content" : "Expand Content";
-			localStorage.setItem("greetmaster-greeting-expanded", expanded ? "true" : "false");
-		});
-		greetingFooter.classList.remove("greetmaster-hidden");
+	greetingSizeButton?.addEventListener("click", () => {
+		greetingContainer.classList.toggle("greetmaster-greeting-min-size");
+		greetingContainer.classList.toggle("greetmaster-greeting-max-size");
+		const expanded = greetingContainer.classList.contains("greetmaster-greeting-max-size");
+		greetingSizeButton.textContent = expanded ? "Shrink Content" : "Expand Content";
+		localStorage.setItem("greetmaster-greeting-expanded", expanded ? "true" : "false");
 	});
+}
+
+function uncommentHtml(greetingContent) {
+	const greetingHtml = greetingContent.innerHTML.trim().replaceAll("&lt;!--", "<!--").replaceAll("--&gt;", "-->");
+	greetingContent.innerHTML = greetingHtml.substring(4, greetingHtml.length - 3);
+}
+
+function prepareEditableContent(greetingContent) {
+	const editableElements = greetingContent.querySelectorAll(".greetmaster-editable-content");
+	const editableFields = {};
+	for (const editableElement of editableElements) {
+		if (editableFields[editableElement.dataset.field] === undefined)
+			editableFields[editableElement.dataset.field] = editableElement.textContent;
+	}
+	function editableFocusEvent(event) {
+		if (event.target.innerHTML == event.target.dataset.field)
+			event.target.innerHTML = "<br>";
+		if (event.target.style.textAlign == "center")
+			event.target.style.textAlign = "unset";
+		editableInputEvent(event);
+	}
+	function editableUnfocusEvent(event) {
+		if (event.target.innerHTML == "<br>" || event.target.innerHTML == "") {
+			event.target.innerHTML = event.target.dataset.field;
+			event.target.style.textAlign = "center";
+		}
+		editableInputEvent(event);
+	}
+	function editablePasteEvent(event) {
+		event.preventDefault();
+		if (document.activeElement === event.target)
+			document.execCommand("insertText", false, event.clipboardData.getData("text"));
+	}
+	function editableInputEvent(event) {
+		for (const editableElement of editableElements) {
+			if (editableElement === event.target || editableElement.dataset.field != event.target.dataset.field) continue;
+			editableElement.innerHTML = event.target.innerHTML;
+			editableElement.style.textAlign = event.target.style.textAlign;
+		}
+		editableFields[event.target.dataset.field] = event.target.textContent;
+	}
+	for (const editableElement of editableElements) {
+		editableElement.addEventListener("focus", editableFocusEvent);
+		editableElement.addEventListener("blur", editableUnfocusEvent);
+		editableElement.addEventListener("paste", editablePasteEvent);
+		editableElement.addEventListener("input", editableInputEvent);
+		editableElement.style.minWidth = `${editableElement.offsetWidth}px`;
+		editableElement.style.textAlign = "center";
+	}
+}
+
+function loadScript(url) {
+	const script = document.createElement("script");
+	script.src = url;
+	document.head.append(script);
+	return new Promise(resolve => script.addEventListener("load", resolve));
 }
 
 async function prepareMidi(greetingContent, greetingOverlay) {
@@ -51,14 +101,15 @@ async function prepareFlash(greetingContent, greetingOverlay) {
 	if (flashPlaceholder === null) return;
 	const flashInfo = flashPlaceholder.dataset;
 	await loadScript("https://unpkg.com/@ruffle-rs/ruffle");
+	const screensaver = greetingContent.dataset.type == "Screensaver Preview";
 	const player = window.RufflePlayer.newest().createPlayer();
-	player.ruffle().config.autoplay = "off";
+	player.ruffle().config.autoplay = screensaver ? "on" : "off";
+	player.ruffle().config.unmuteOverlay = "hidden";
 	player.ruffle().config.base = flashInfo.src.replace(/[^/]+$/, "");
 	player.ruffle().config.allowScriptAccess = true;
 	player.ruffle().config.splashScreen = false;
 	player.addEventListener("loadedmetadata", () => {
 		if (player.ruffle().metadata.width > 1 && player.ruffle().metadata.height > 1) {
-			const screensaver = greetingContent.dataset.type == "Screensaver Preview";
 			player.style.width  = `${!screensaver ? player.ruffle().metadata.width : 224}px`;
 			player.style.height = `${!screensaver ? player.ruffle().metadata.height : 168}px`;
 		}
@@ -111,82 +162,28 @@ async function prepareEmu(greetingContent, greetingOverlay) {
 	});
 }
 
-function loadScript(url) {
-	const script = document.createElement("script");
-	script.src = url;
-	document.head.append(script);
-	return new Promise(resolve => script.addEventListener("load", resolve));
-}
-
-function prepareEditableContent(greetingContent) {
-	const editableElements = greetingContent.querySelectorAll(".greetmaster-editable-content");
-	const editableFields = {};
-	for (const editableElement of editableElements) {
-		if (editableFields[editableElement.dataset.field] === undefined)
-			editableFields[editableElement.dataset.field] = editableElement.textContent;
-	}
-	function editableFocusEvent(event) {
-		if (event.target.innerHTML == event.target.dataset.field)
-			event.target.innerHTML = "<br>";
-		if (event.target.style.textAlign == "center")
-			event.target.style.textAlign = "unset";
-		editableInputEvent(event);
-	}
-	function editableUnfocusEvent(event) {
-		if (event.target.innerHTML == "<br>" || event.target.innerHTML == "") {
-			event.target.innerHTML = event.target.dataset.field;
-			event.target.style.textAlign = "center";
-		}
-		editableInputEvent(event);
-	}
-	function editablePasteEvent(event) {
-		event.preventDefault();
-		if (document.activeElement === event.target)
-			document.execCommand("insertText", false, event.clipboardData.getData("text"));
-	}
-	function editableInputEvent(event) {
-		for (const editableElement of editableElements) {
-			if (editableElement === event.target || editableElement.dataset.field != event.target.dataset.field) continue;
-			editableElement.innerHTML = event.target.innerHTML;
-			editableElement.style.textAlign = event.target.style.textAlign;
-		}
-		editableFields[event.target.dataset.field] = event.target.textContent;
-	}
-	for (const editableElement of editableElements) {
-		editableElement.addEventListener("focus", editableFocusEvent);
-		editableElement.addEventListener("blur", editableUnfocusEvent);
-		editableElement.addEventListener("paste", editablePasteEvent);
-		editableElement.addEventListener("input", editableInputEvent);
-		editableElement.style.minWidth = `${editableElement.offsetWidth}px`;
-		editableElement.style.textAlign = "center";
-	}
-}
-
-function uncommentHtml(greetingContent) {
-	const greetingHtml = greetingContent.innerHTML.trim().replaceAll("&lt;!--", "<!--").replaceAll("--&gt;", "-->");
-	greetingContent.innerHTML = greetingHtml.substring(4, greetingHtml.length - 3);
+function revealGreeting(greetingContent, greetingOverlay) {
+	greetingContent.classList.remove("greetmaster-greeting-hidden");
+	greetingOverlay.style.display = "none";
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
 	const greetingOverlay = document.querySelector(".greetmaster-greeting-overlay");
 	const greetingContent = greetingOverlay.previousElementSibling;
-	if (greetingContent.id != "greetmaster-unsupported-container") {
-		if (params.get("embed") != "true")
-			prepareHtml(greetingContent, greetingOverlay);
-		else if (greetingContent.id == "greetmaster-html-container")
-			uncommentHtml(greetingContent);
+	if (greetingContent.id == "greetmaster-html-container") {
+		prepareSizeButton(greetingContent);
+		uncommentHtml(greetingContent);
 		prepareEditableContent(greetingContent);
-		await prepareMidi(greetingContent, greetingOverlay);
-		await prepareFlash(greetingContent, greetingOverlay);
-		await prepareEmu(greetingContent, greetingOverlay);
-		greetingOverlay.classList.remove("greetmaster-hidden");
-		greetingOverlay.addEventListener("click", () => {
-			greetingContent.classList.remove("greetmaster-greeting-hidden");
-			greetingOverlay.style.display = "none";
-		});
 	}
+	else
+		greetingContent.parentElement.classList.add("greetmaster-greeting-min-size");
+	await prepareMidi(greetingContent, greetingOverlay);
+	await prepareFlash(greetingContent, greetingOverlay);
+	await prepareEmu(greetingContent, greetingOverlay);
+	if (["Image E-Card", "Wallpaper Preview", "Screensaver Preview"].some(type => type == greetingContent.dataset.type))
+		revealGreeting(greetingContent, greetingOverlay);
 	else {
-		greetingContent.classList.remove("greetmaster-greeting-hidden");
-		greetingOverlay.style.display = "none";
+		greetingOverlay.classList.remove("greetmaster-hidden");
+		greetingOverlay.addEventListener("click", () => { revealGreeting(greetingContent, greetingOverlay); });
 	}
 });
