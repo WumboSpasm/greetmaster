@@ -5,7 +5,15 @@
 	<div class="greetmaster-greeting-overlay greetmaster-hidden">Click to open e-card</div>
 </div>
 <div class="greetmaster-greeting-options">
-	{SIZEBUTTON?<div class="greetmaster-greeting-options-button greetmaster-greeting-size-button"></div>}
-	<div class="greetmaster-greeting-options-spacer"></div>
-	{LINKS}
+	{SIZEBUTTON?<span class="greetmaster-greeting-options-left">
+		<span class="greetmaster-greeting-options-button greetmaster-greeting-size-button"></span>
+	</span>}
+	{LINKS?<span class="greetmaster-greeting-download-links">
+		<span class="greetmaster-greeting-options-caption">Downloads:</span>
+		{VALUE}
+	</span>}
+	<span class="greetmaster-greeting-options-right">
+		{COPYBUTTON?<span class="greetmaster-greeting-options-button greetmaster-greeting-copy-button">Copy{VALUE} Link</span>}
+		{HOMEBUTTON?<a class="greetmaster-greeting-options-button" href="{VALUE}">Browse E-Cards</a>}
+	</span>
 </div>

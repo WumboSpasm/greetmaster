@@ -42,7 +42,7 @@
 .greetmaster-greeting-options {
 	width: 100%;
 	background-color: var(--greetmaster-background-color-4);
-	padding: 4px 6px;
+	padding: 4px 8px;
 	box-sizing: border-box;
 	position: sticky;
 	bottom: 0;
@@ -57,11 +57,26 @@
 	text-decoration: underline;
 	cursor: pointer;
 }
-.greetmaster-greeting-options-section {
-	color: #fffd;
+.greetmaster-greeting-options-left,
+.greetmaster-greeting-options-right {
+	min-width: 200px;
 }
-.greetmaster-greeting-options-spacer {
-	flex-grow: 1;
+.greetmaster-greeting-options-left {
+	margin-right: auto;
+}
+.greetmaster-greeting-options-right {
+	text-align: right;
+	margin-left: auto;
+}
+.greetmaster-greeting-download-links {
+	display: flex;
+	gap: 6px;
+}
+.greetmaster-greeting-download-links > .greetmaster-greeting-options-button:not(:last-child):after {
+	content: ",";
+}
+.greetmaster-greeting-options-caption {
+	color: #fffd;
 }
 
 /* Editable content */

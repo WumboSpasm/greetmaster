@@ -106,7 +106,7 @@ const serverHandler = (request, info) => {
 				"STYLE": "",
 				"CONTENT": "",
 			};
-			const embed = params.get("embed") == "true";
+			const isEmbedded = params.get("embed") == "true";
 			if (requestPath == "about") {
 				mainVars["TITLE"] = "About Greetmaster";
 				mainVars["OGTITLE"] = mainVars["TITLE"];
@@ -118,7 +118,7 @@ const serverHandler = (request, info) => {
 				const id = params.get("id");
 				const greeting = greetings[id];
 				if (greeting === undefined) throw new BadRequestError();
-				if (embed) {
+				if (isEmbedded) {
 					mainVars["TITLE"] = "E-Card at Greetmaster";
 					mainVars["SHOWNAV"] = false;
 				}
@@ -138,13 +138,38 @@ const serverHandler = (request, info) => {
 					"TYPE": greeting.types[0],
 					"BODY":  "",
 					"SIZEBUTTON": false,
-					"LINKS": "",
+					"LINKS": false,
+					"COPYBUTTON": !isEmbedded,
+					"HOMEBUTTON": isEmbedded,
 				};
 				if (greeting.htmlPath != "") {
 					greetingVars["STYLE"] = "greetmaster-html-container";
 					[greetingVars["BODY"], mainVars["STYLE"]] = preparePage(greeting);
+					const editableExp = /\[([a-z ]+)\]/gi;
+					const isEditable = editableExp.test(greetingVars["BODY"]);
+					if (isEditable) {
+						if (greeting.types[0] == "CreataMail Template")
+							greetingVars["BODY"] = greetingVars["BODY"].replaceAll(/ contenteditable="(?:true|false)"/g, "");
+						if (isEmbedded) {
+							mainVars["TITLE"] = `Personalized ${mainVars["TITLE"]}`;
+							let decodedParamsString;
+							try { decodedParamsString = atob(params.get("data").substring(0, 2000)); } catch {}
+							const decodedParams = new URLSearchParams(decodedParamsString ?? "")
+							greetingVars["BODY"] = greetingVars["BODY"].replaceAll(editableExp, (_, bodyParam) =>
+								decodedParams.has(bodyParam)
+									? stringifyEntities(decodedParams.get(bodyParam).trim(), { escapeOnly: true }).replaceAll("\n", "<br>")
+									: bodyParam
+							);
+						}
+						else
+							greetingVars["BODY"] = greetingVars["BODY"].replaceAll(editableExp,
+								`<span class="greetmaster-editable-content" contenteditable="true" data-field="$1">$1</span>`
+							);
+					}
 					greetingVars["BODY"] = `<!--${greetingVars["BODY"].replaceAll("<!--", "&lt;!--").replaceAll("-->", "--&gt;")}-->`;
 					greetingVars["SIZEBUTTON"] = true;
+					if (greetingVars["COPYBUTTON"] && isEditable)
+						greetingVars["COPYBUTTON"] = " Personalized";
 				}
 				else {
 					switch (greeting.types[0]) {
@@ -190,11 +215,13 @@ const serverHandler = (request, info) => {
 						"Windows": greeting.extraVars.windowsPath,
 						"MacOS": greeting.extraVars.macPath,
 					});
+				if (greetingVars["HOMEBUTTON"])
+					greetingVars["HOMEBUTTON"] = requestUrl.origin;
 				mainVars["CONTENT"] = buildHtml(templates.greeting, greetingVars);
 			}
 			if (params.toString() == "")
 				mainVars["NOINDEX"] = false;
-			if (!embed || mainVars["PAGESCRIPT"] != "greeting.js")
+			if (!isEmbedded || mainVars["PAGESCRIPT"] != "greeting.js")
 				mainVars["CONTENT"] = buildHtml(templates.mainNavigation, {
 					"SEARCH": mainVars["PAGESCRIPT"] == "home.js"
 						? stringifyEntities((params.get("search") ?? "").substring(0, 64), { escapeOnly: true })
@@ -429,7 +456,6 @@ function preparePage(greeting) {
 		const midiAttrString = Object.entries(midiAttrs).map(attr => `data-${attr[0]}="${attr[1]}"`).join(" ");
 		bodyContent = `<div id="greetmaster-midi-placeholder" ${midiAttrString}></div>\n` + newBodyContent + bodyContent;
 	}
-	bodyContent = bodyContent.replaceAll(/\[([a-z ]+)\]/gi, `<span class="greetmaster-editable-content" contenteditable="true" data-field="$1">$1</span>`);
 	return [bodyContent, styleElement];
 }
 
@@ -484,10 +510,10 @@ function buildHtml(template, definitions) {
 			const newLine = match[1] ?? "";
 			const tabs = match[2] ?? "";
 			const inlineValue = match[3];
-			const realValue = value ? (
+			const realValue = value ? newLine + (
 				inlineValue !== undefined
-					? (newLine + tabs + (typeof value == "string" ? inlineValue.replace("{VALUE}", value) : inlineValue))
-					: newLine + value.replaceAll(/^/gm, tabs)
+					? tabs + inlineValue.replace("{VALUE}", typeof value == "string" ? value : "")
+					: value.replaceAll(/^/gm, tabs)
 			) : "";
 			varData.push({
 				value: realValue,
@@ -513,7 +539,7 @@ function buildDownloads(definitions) {
 		const downloadPath = definitions[downloadTitle];
 		if (downloadPath !== undefined) downloadLinks.push(`<a class="greetmaster-greeting-options-button" href="/data/${downloadPath}">${downloadTitle}</a>`);
 	}
-	return downloadLinks.length > 0 ? `<div class="greetmaster-greeting-options-section">Downloads:</div>&nbsp;\n${downloadLinks.join(",&nbsp;\n")}` : "";
+	return downloadLinks.length > 0 ? downloadLinks.join("\n\t\t") : false;
 }
 
 // Extract filters from query string

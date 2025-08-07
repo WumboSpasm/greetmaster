@@ -24,47 +24,76 @@ function uncommentHtml(greetingContent) {
 }
 
 function prepareEditableContent(greetingContent) {
-	const editableElements = greetingContent.querySelectorAll(".greetmaster-editable-content");
-	const editableFields = {};
-	for (const editableElement of editableElements) {
-		if (editableFields[editableElement.dataset.field] === undefined)
-			editableFields[editableElement.dataset.field] = editableElement.textContent;
-	}
-	function editableFocusEvent(event) {
-		if (event.target.innerHTML == event.target.dataset.field)
-			event.target.innerHTML = "<br>";
-		if (event.target.style.textAlign == "center")
-			event.target.style.textAlign = "unset";
-		editableInputEvent(event);
-	}
-	function editableUnfocusEvent(event) {
-		if (event.target.innerHTML == "<br>" || event.target.innerHTML == "") {
-			event.target.innerHTML = event.target.dataset.field;
-			event.target.style.textAlign = "center";
-		}
-		editableInputEvent(event);
-	}
-	function editablePasteEvent(event) {
-		event.preventDefault();
-		if (document.activeElement === event.target)
-			document.execCommand("insertText", false, event.clipboardData.getData("text"));
-	}
-	function editableInputEvent(event) {
+	const editableParams = new URLSearchParams();
+	if (greetingContent.id == "greetmaster-html-container") {
+		const editableElements = greetingContent.querySelectorAll(".greetmaster-editable-content");
 		for (const editableElement of editableElements) {
-			if (editableElement === event.target || editableElement.dataset.field != event.target.dataset.field) continue;
-			editableElement.innerHTML = event.target.innerHTML;
-			editableElement.style.textAlign = event.target.style.textAlign;
+			if (!editableParams.has(editableElement.dataset.field))
+				editableParams.set(editableElement.dataset.field, editableElement.textContent);
 		}
-		editableFields[event.target.dataset.field] = event.target.textContent;
+		const editableFocusEvent = event => {
+			if (event.target.innerHTML == event.target.dataset.field)
+				event.target.innerHTML = "<br>";
+			if (event.target.style.textAlign == "center")
+				event.target.style.textAlign = "unset";
+			editableInputEvent(event);
+		}
+		const editableUnfocusEvent = event => {
+			if (event.target.innerHTML == "<br>" || event.target.innerHTML == "") {
+				event.target.innerHTML = event.target.dataset.field;
+				event.target.style.textAlign = "center";
+			}
+			editableInputEvent(event);
+		}
+		const editablePasteEvent = event => {
+			event.preventDefault();
+			if (document.activeElement === event.target)
+				document.execCommand("insertText", false, event.clipboardData.getData("text"));
+		}
+		const editableInputEvent = event => {
+			for (const editableElement of editableElements) {
+				if (editableElement === event.target || editableElement.dataset.field != event.target.dataset.field) continue;
+				editableElement.innerHTML = event.target.innerHTML;
+				editableElement.style.textAlign = event.target.style.textAlign;
+			}
+			// innerText is used here instead of textContent only because it preserves newlines
+			editableParams.set(event.target.dataset.field, event.target.innerText);
+		}
+		for (const editableElement of editableElements) {
+			editableElement.addEventListener("focus", editableFocusEvent);
+			editableElement.addEventListener("blur", editableUnfocusEvent);
+			editableElement.addEventListener("paste", editablePasteEvent);
+			editableElement.addEventListener("input", editableInputEvent);
+			editableElement.style.minWidth = `${editableElement.offsetWidth}px`;
+			editableElement.style.textAlign = "center";
+		}
 	}
-	for (const editableElement of editableElements) {
-		editableElement.addEventListener("focus", editableFocusEvent);
-		editableElement.addEventListener("blur", editableUnfocusEvent);
-		editableElement.addEventListener("paste", editablePasteEvent);
-		editableElement.addEventListener("input", editableInputEvent);
-		editableElement.style.minWidth = `${editableElement.offsetWidth}px`;
-		editableElement.style.textAlign = "center";
-	}
+	const copyLinkElement = document.querySelector(".greetmaster-greeting-copy-button");
+	let linkCopied = false;
+	copyLinkElement?.addEventListener("click", async () => {
+		if (linkCopied) return;
+		let link = `${location.origin}/?id=${params.get("id")}&embed=true`;
+		if (editableParams.toString() != "") {
+			const encodedParamString = btoa(editableParams.toString());
+			if (encodedParamString.length > 2000) {
+				alert("You have too much text!");
+				return;
+			}
+			link += `&data=${encodeURIComponent(btoa(editableParams.toString()))}`;
+		}
+		await navigator.clipboard.writeText(link);
+		const copyLinkText = copyLinkElement.textContent;
+		copyLinkElement.textContent = "Link copied!";
+		copyLinkElement.classList.remove("greetmaster-greeting-options-button");
+		copyLinkElement.classList.add("greetmaster-greeting-options-caption");
+		linkCopied = true;
+		setTimeout(() => {
+			copyLinkElement.textContent = copyLinkText;
+			copyLinkElement.classList.add("greetmaster-greeting-options-button");
+			copyLinkElement.classList.remove("greetmaster-greeting-options-caption");
+			linkCopied = false;
+		}, 2000);
+	});
 }
 
 function loadScript(url) {
@@ -173,10 +202,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 	if (greetingContent.id == "greetmaster-html-container") {
 		prepareSizeButton(greetingContent);
 		uncommentHtml(greetingContent);
-		prepareEditableContent(greetingContent);
 	}
 	else
 		greetingContent.parentElement.classList.add("greetmaster-greeting-min-size");
+	prepareEditableContent(greetingContent);
 	await prepareMidi(greetingContent, greetingOverlay);
 	await prepareFlash(greetingContent, greetingOverlay);
 	await prepareEmu(greetingContent, greetingOverlay);

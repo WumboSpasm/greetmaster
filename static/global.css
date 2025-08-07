@@ -8,7 +8,7 @@
 	--greetmaster-background-color-invert: #ffffff;
 }
 body {
-	width: 100vw;
+	width: 100%;
 	height: 100vh;
 	background-color: var(--greetmaster-background-color-4);
 	color: var(--greetmaster-text-color);
