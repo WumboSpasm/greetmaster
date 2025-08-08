@@ -130,7 +130,6 @@ const serverHandler = (request, info) => {
 						mainVars["OGIMAGE"] = `${requestUrl.origin}/data/thumbs/${id.substring(0, 4)}/${id}.png`;
 					mainVars["NOINDEX"] = false;
 				}
-				mainVars["OGTITLE"] = stringifyEntities(mainVars["TITLE"], { escapeOnly: true });
 				mainVars["PAGECSS"] = "greeting.css";
 				mainVars["PAGESCRIPT"] = "greeting.js";
 				const greetingVars = {
@@ -217,6 +216,7 @@ const serverHandler = (request, info) => {
 					});
 				if (greetingVars["HOMEBUTTON"])
 					greetingVars["HOMEBUTTON"] = requestUrl.origin;
+				mainVars["OGTITLE"] = stringifyEntities(mainVars["TITLE"], { escapeOnly: true });
 				mainVars["CONTENT"] = buildHtml(templates.greeting, greetingVars);
 			}
 			if (params.toString() == "")
