@@ -85,10 +85,25 @@
 	padding: 0 2px;
 	display: inline-block;
 	box-shadow: 0 0 0 1px;
+	cursor: text;
 }
 .greetmaster-editable-content:focus {
 	background-color: #ff05;
 	outline: none;
+}
+.greetmaster-editable-content * {
+	cursor: inherit;
+}
+.greetmaster-editable-mambo-spacer {
+	width: 25px;
+	display: inline-block;
+}
+.greetmaster-editable-mambo-break {
+	height: 0;
+	display: block;
+}
+.greetmaster-editable-mambo-break + .greetmaster-editable-mambo-break {
+	height: 50px;
 }
 
 /* Content-specific styles */
@@ -118,6 +133,9 @@
 }
 #greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="CreataMail Template"] div:has(> table) {
 	box-sizing: border-box;
+}
+.greetmaster-greeting-min-size:has(#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="Animated Text E-Card"]) {
+	min-width: 768px !important;
 }
 #greetmaster-emu-placeholder {
 	width: 640px;

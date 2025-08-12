@@ -51,6 +51,14 @@ const filters = {
 	"type": (greeting, value) => greeting.types.includes(value),
 };
 
+const mamboMap = {
+	"'": "apos",
+	",": "comma",
+	"!": "exclam",
+	".": "period",
+	"?": "question",
+};
+
 const globalStats = getStats(new URLSearchParams(), true);
 const statTitles = Object.values(greetings).reduce((statTitles, greeting) => {
 	for (const title of greeting.titles)
@@ -59,6 +67,7 @@ const statTitles = Object.values(greetings).reduce((statTitles, greeting) => {
 }, {});
 
 const urlExps = [/((?:href|src|action|background) *= *)("(?:(?!>).)+?"|[^ >]+)/gis, /(url *)(\(.+?\))/gis];
+const editableExp = /\[([a-z0-9 ]+)\]/gi;
 
 // Handle server requests
 const serverHandler = (request, info) => {
@@ -143,32 +152,14 @@ const serverHandler = (request, info) => {
 				};
 				if (greeting.htmlPath != "") {
 					greetingVars["STYLE"] = "greetmaster-html-container";
-					[greetingVars["BODY"], mainVars["STYLE"]] = preparePage(greeting);
-					const editableExp = /\[([a-z ]+)\]/gi;
-					const isEditable = editableExp.test(greetingVars["BODY"]);
-					if (isEditable) {
-						if (greeting.types[0] == "CreataMail Template")
-							greetingVars["BODY"] = greetingVars["BODY"].replaceAll(/ contenteditable="(?:true|false)"/g, "");
-						if (isEmbedded) {
-							mainVars["TITLE"] = `Personalized ${mainVars["TITLE"]}`;
-							let decodedParamsString;
-							try { decodedParamsString = atob(params.get("data").substring(0, 2000)); } catch {}
-							const decodedParams = new URLSearchParams(decodedParamsString ?? "")
-							greetingVars["BODY"] = greetingVars["BODY"].replaceAll(editableExp, (_, bodyParam) =>
-								decodedParams.has(bodyParam)
-									? stringifyEntities(decodedParams.get(bodyParam).trim(), { escapeOnly: true }).replaceAll("\n", "<br>")
-									: bodyParam
-							);
-						}
-						else
-							greetingVars["BODY"] = greetingVars["BODY"].replaceAll(editableExp,
-								`<span class="greetmaster-editable-content" contenteditable="true" data-field="$1">$1</span>`
-							);
-					}
+					[greetingVars["BODY"], mainVars["STYLE"]] = preparePage(greeting, params);
 					greetingVars["BODY"] = `<!--${greetingVars["BODY"].replaceAll("<!--", "&lt;!--").replaceAll("-->", "--&gt;")}-->`;
 					greetingVars["SIZEBUTTON"] = true;
+					const isEditable = greetingVars["BODY"].includes("greetmaster-editable-content");
 					if (greetingVars["COPYBUTTON"] && isEditable)
 						greetingVars["COPYBUTTON"] = " Personalized";
+					if (isEmbedded && isEditable)
+						mainVars["TITLE"] = `Personalized ${mainVars["TITLE"]}`;
 				}
 				else {
 					switch (greeting.types[0]) {
@@ -366,7 +357,7 @@ function redirectLinks(page, pagePath) {
 }
 
 // Return page data that is prepared to be injected into greeting template
-function preparePage(greeting) {
+function preparePage(greeting, params) {
 	const attrExp = /([a-z]+) *= *("(?:(?!>).)+?"|[^ >]+)/gis;
 	let bodyContent = redirectLinks(getPage(greeting), greeting.htmlPath);
 	let styleElement = "";
@@ -456,6 +447,44 @@ function preparePage(greeting) {
 		const midiAttrString = Object.entries(midiAttrs).map(attr => `data-${attr[0]}="${attr[1]}"`).join(" ");
 		bodyContent = `<div id="greetmaster-midi-placeholder" ${midiAttrString}></div>\n` + newBodyContent + bodyContent;
 	}
+	if (greeting.types[0] == "CreataMail Template")
+		bodyContent = bodyContent.replaceAll(/ contenteditable="(?:true|false)"/g, "");
+	else if (greeting.types[0] == "Animated Text E-Card")
+		bodyContent = bodyContent.replace(/\[Mamboline1\]\s*\[Mamboline2\]\s*\[Mamboline3\]/, "[Mambo]<br>");
+	if (params.get("embed") == "true") {
+		let decodedParamsString;
+		try { decodedParamsString = atob(params.get("data").substring(0, 2000)); } catch {}
+		const decodedParams = new URLSearchParams(decodedParamsString);
+		bodyContent = bodyContent.replaceAll(editableExp, (_, bodyParam) => {
+			let paramValue = (decodedParams.get(bodyParam) ?? bodyParam).trim();
+			if (bodyParam == "Mambo") {
+				const id = params.get("id");
+				let mamboContent = "";
+				for (let i = 0; i < paramValue.length; i++) {
+					let char = paramValue[i].toLowerCase();
+					if (paramValue.charCodeAt(i) == 32 || paramValue.charCodeAt(i) == 160)
+						mamboContent += `<span class="greetmaster-editable-mambo-spacer"></span>`;
+					else if (char == "\n")
+						mamboContent += `<span class="greetmaster-editable-mambo-break"></span>`;
+					else {
+						if (!/[a-z0-9]/.test(char)) {
+							if (mamboMap[char] === undefined) continue;
+							char = mamboMap[char];
+						}
+						mamboContent += `<img src="/data/www.imgag.com/product/full/ma/${id}/${char}.gif">`;
+					}
+				}
+				if (id == "2016027" || id == "2016040")
+					mamboContent += `<img src="/data/www.imgag.com/product/full/ma/${id}/special.gif">`;
+				paramValue = mamboContent;
+			}
+			else
+				paramValue = stringifyEntities(paramValue, { escapeOnly: true }).replaceAll("\n", "<br>");
+			return paramValue;
+		});
+	}
+	else
+		bodyContent = bodyContent.replaceAll(editableExp, `<span class="greetmaster-editable-content" contenteditable="true" data-field="$1">$1</span>`);
 	return [bodyContent, styleElement];
 }
 
@@ -539,7 +568,7 @@ function buildDownloads(definitions) {
 		const downloadPath = definitions[downloadTitle];
 		if (downloadPath !== undefined) downloadLinks.push(`<a class="greetmaster-greeting-options-button" href="/data/${downloadPath}">${downloadTitle}</a>`);
 	}
-	return downloadLinks.length > 0 ? downloadLinks.join("\n\t\t") : false;
+	return downloadLinks.length > 0 ? downloadLinks.join("") : false;
 }
 
 // Extract filters from query string

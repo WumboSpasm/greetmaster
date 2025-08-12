@@ -27,23 +27,52 @@ function prepareEditableContent(greetingContent) {
 	const editableParams = new URLSearchParams();
 	if (greetingContent.id == "greetmaster-html-container") {
 		const editableElements = greetingContent.querySelectorAll(".greetmaster-editable-content");
-		for (const editableElement of editableElements) {
-			if (!editableParams.has(editableElement.dataset.field))
-				editableParams.set(editableElement.dataset.field, editableElement.textContent);
+		const mamboMap = {
+			"'": "apos",
+			",": "comma",
+			"!": "exclam",
+			".": "period",
+			"?": "question",
+		};
+		const editableToMambo = element => {
+			const paramValue = editableParams.get(element.dataset.field).trim();
+			const id = params.get("id");
+			let mamboContent = "";
+			for (let i = 0; i < paramValue.length; i++) {
+				let char = paramValue[i].toLowerCase();
+				if (paramValue.charCodeAt(i) == 32 || paramValue.charCodeAt(i) == 160)
+					mamboContent += `<span class="greetmaster-editable-mambo-spacer"></span>`;
+				else if (char == "\n")
+					mamboContent += `<span class="greetmaster-editable-mambo-break"></span>`;
+				else {
+					if (!/[a-z0-9]/.test(char)) {
+						if (mamboMap[char] === undefined) continue;
+						char = mamboMap[char];
+					}
+					mamboContent += `<img src="/data/www.imgag.com/product/full/ma/${id}/${char}.gif">`;
+				}
+			}
+			if (id == "2016027" || id == "2016040")
+				mamboContent += `<img src="/data/www.imgag.com/product/full/ma/${id}/special.gif">`;
+			element.innerHTML = mamboContent;
 		}
 		const editableFocusEvent = event => {
-			if (event.target.innerHTML == event.target.dataset.field)
-				event.target.innerHTML = "<br>";
+			if (event.target.dataset.field == "Mambo")
+				event.target.innerText = editableParams.get(event.target.dataset.field);
+			if (event.target.innerText == event.target.dataset.field)
+				event.target.innerText = "\n";
 			if (event.target.style.textAlign == "center")
 				event.target.style.textAlign = "unset";
 			editableInputEvent(event);
 		}
 		const editableUnfocusEvent = event => {
-			if (event.target.innerHTML == "<br>" || event.target.innerHTML == "") {
-				event.target.innerHTML = event.target.dataset.field;
+			if (event.target.innerText == "\n" || event.target.innerText == "") {
+				event.target.innerText = event.target.dataset.field;
 				event.target.style.textAlign = "center";
 			}
 			editableInputEvent(event);
+			if (event.target.dataset.field == "Mambo")
+				editableToMambo(event.target);
 		}
 		const editablePasteEvent = event => {
 			event.preventDefault();
@@ -60,12 +89,16 @@ function prepareEditableContent(greetingContent) {
 			editableParams.set(event.target.dataset.field, event.target.innerText);
 		}
 		for (const editableElement of editableElements) {
+			if (!editableParams.has(editableElement.dataset.field))
+				editableParams.set(editableElement.dataset.field, editableElement.textContent);
 			editableElement.addEventListener("focus", editableFocusEvent);
 			editableElement.addEventListener("blur", editableUnfocusEvent);
 			editableElement.addEventListener("paste", editablePasteEvent);
 			editableElement.addEventListener("input", editableInputEvent);
 			editableElement.style.minWidth = `${editableElement.offsetWidth}px`;
 			editableElement.style.textAlign = "center";
+			if (editableElement.dataset.field == "Mambo")
+				editableToMambo(editableElement);
 		}
 	}
 	const copyLinkElement = document.querySelector(".greetmaster-greeting-copy-button");
