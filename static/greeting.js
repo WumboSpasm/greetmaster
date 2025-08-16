@@ -160,35 +160,40 @@ async function prepareMidi(greetingContent, greetingOverlay) {
 
 async function prepareFlash(greetingContent, greetingOverlay) {
 	const flashPlaceholder = greetingContent.querySelector("#greetmaster-flash-placeholder");
-	if (flashPlaceholder === null) return;
-	const flashInfo = flashPlaceholder.dataset;
+	const flashEmbed = greetingContent.querySelector(`embed[src$=".swf"]`);
+	if (flashPlaceholder === null && flashEmbed === null) return;
 	await loadScript("https://unpkg.com/@ruffle-rs/ruffle");
-	const screensaver = greetingContent.dataset.type == "Screensaver Preview";
-	const player = window.RufflePlayer.newest().createPlayer();
-	player.ruffle().config.autoplay = screensaver ? "on" : "off";
-	player.ruffle().config.unmuteOverlay = "hidden";
-	player.ruffle().config.base = flashInfo.src.replace(/[^/]+$/, "");
-	player.ruffle().config.allowScriptAccess = true;
-	player.ruffle().config.splashScreen = false;
-	player.addEventListener("loadedmetadata", () => {
-		if (player.ruffle().metadata.width > 1 && player.ruffle().metadata.height > 1) {
-			player.style.width  = `${!screensaver ? player.ruffle().metadata.width : 224}px`;
-			player.style.height = `${!screensaver ? player.ruffle().metadata.height : 168}px`;
+	const isScreensaver = greetingContent.dataset.type == "Screensaver Preview";
+	window.RufflePlayer.config = {
+		autoplay: flashEmbed !== null || isScreensaver ? "on" : "off",
+		unmuteOverlay: "hidden",
+		base: (flashPlaceholder?.dataset.src ?? flashEmbed.src).replace(/[^/]+$/, ""),
+		allowScriptAccess: true,
+		splashScreen: false,
+	};
+	if (flashPlaceholder !== null) {
+		const player = window.RufflePlayer.newest().createPlayer();
+		player.addEventListener("loadedmetadata", () => {
+			if (player.ruffle().metadata.width > 1 && player.ruffle().metadata.height > 1) {
+				player.style.width  = `${!isScreensaver ? player.ruffle().metadata.width : 224}px`;
+				player.style.height = `${!isScreensaver ? player.ruffle().metadata.height : 168}px`;
+			}
+		});
+		const flashInfo = flashPlaceholder.dataset;
+		let flashUrl = flashInfo.src;
+		if (flashInfo.protected == "true") {
+			if (flashInfo.height <= 300)
+				flashUrl = "/data/www.imgag.com/product/preview/flash/fsShell.swf";
+			else if (flashInfo.height <= 320)
+				flashUrl = "/data/www.imgag.com/product/preview/flash/ws8Shell.swf";
+			else
+				flashUrl = "/data/www.imgag.com/product/preview/flash/bws8Shell.swf";
+			flashUrl += `?ihost=${location.origin}&cardNum=${flashInfo.src.replace(/\.swf$/, "")}`;
 		}
-	});
-	let flashUrl = flashInfo.src;
-	if (flashInfo.protected == "true") {
-		if (flashInfo.height <= 300)
-			flashUrl = "/data/www.imgag.com/product/preview/flash/fsShell.swf";
-		else if (flashInfo.height <= 320)
-			flashUrl = "/data/www.imgag.com/product/preview/flash/ws8Shell.swf";
-		else
-			flashUrl = "/data/www.imgag.com/product/preview/flash/bws8Shell.swf";
-		flashUrl += `?ihost=${location.origin}&cardNum=${flashInfo.src.replace(/\.swf$/, "")}`;
+		flashPlaceholder.replaceWith(player);
+		await player.ruffle().load(flashUrl);
+		greetingOverlay.addEventListener("click", () => player.ruffle().resume());
 	}
-	flashPlaceholder.replaceWith(player);
-	await player.ruffle().load(flashUrl);
-	greetingOverlay.addEventListener("click", () => player.ruffle().resume());
 }
 
 async function prepareEmu(greetingContent, greetingOverlay) {
