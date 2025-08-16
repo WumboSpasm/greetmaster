@@ -20,7 +20,7 @@ const config = {
 // Define templates
 const templates = {
 	main:			getTemplate("main.html"),
-	mainNavigation:	getTemplate("main_navigation.html"),
+	navigation:		getTemplate("navigation.html"),
 	greeting:		getTemplate("greeting.html"),
 	about:			getTemplate("about.html"),
 	error:			getTemplate("error.html"),
@@ -213,7 +213,7 @@ const serverHandler = (request, info) => {
 			if (params.toString() == "")
 				mainVars["NOINDEX"] = false;
 			if (!isEmbedded || mainVars["PAGESCRIPT"] != "greeting.js")
-				mainVars["CONTENT"] = buildHtml(templates.mainNavigation, {
+				mainVars["CONTENT"] = buildHtml(templates.navigation, {
 					"SEARCH": mainVars["PAGESCRIPT"] == "home.js"
 						? stringifyEntities((params.get("search") ?? "").substring(0, 64), { escapeOnly: true })
 						: "",

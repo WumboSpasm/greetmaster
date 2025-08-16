@@ -184,7 +184,7 @@ async function prepareFlash(greetingContent, greetingOverlay) {
 			flashUrl = "/data/www.imgag.com/product/preview/flash/ws8Shell.swf";
 		else
 			flashUrl = "/data/www.imgag.com/product/preview/flash/bws8Shell.swf";
-		flashUrl += `?ihost=${location.origin}&cardNum=${flashInfo.src.replace(/\.sw[ft]$/, "")}`;
+		flashUrl += `?ihost=${location.origin}&cardNum=${flashInfo.src.replace(/\.swf$/, "")}`;
 	}
 	flashPlaceholder.replaceWith(player);
 	await player.ruffle().load(flashUrl);
