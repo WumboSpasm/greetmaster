@@ -125,6 +125,7 @@
 }
 #greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="CreataMail Template"] {
 	min-height: 480px;
+	padding: 0;
 	overflow: hidden;
 }
 #greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="CreataMail Template"] > div {

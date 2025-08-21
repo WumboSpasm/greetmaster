@@ -160,14 +160,14 @@ async function prepareMidi(greetingContent, greetingOverlay) {
 
 async function prepareFlash(greetingContent, greetingOverlay) {
 	const flashPlaceholder = greetingContent.querySelector("#greetmaster-flash-placeholder");
-	const flashEmbed = greetingContent.querySelector(`embed[src$=".swf"]`);
-	if (flashPlaceholder === null && flashEmbed === null) return;
-	await loadScript("https://unpkg.com/@ruffle-rs/ruffle");
+	const flashObject = greetingContent.querySelector(`object[data*=".swf"]`);
+	if (flashPlaceholder === null && flashObject === null) return;
 	const isScreensaver = greetingContent.dataset.type == "Screensaver Preview";
+	await loadScript("https://unpkg.com/@ruffle-rs/ruffle");
 	window.RufflePlayer.config = {
-		autoplay: flashEmbed !== null || isScreensaver ? "on" : "off",
+		autoplay: flashObject !== null || isScreensaver ? "on" : "off",
 		unmuteOverlay: "hidden",
-		base: (flashPlaceholder?.dataset.src ?? flashEmbed.src).replace(/[^/]+$/, ""),
+		base: (flashPlaceholder?.dataset.src ?? flashObject.data).replace(/[^/]+$/, ""),
 		allowScriptAccess: true,
 		splashScreen: false,
 	};

@@ -447,8 +447,14 @@ function preparePage(greeting, params) {
 		const midiAttrString = Object.entries(midiAttrs).map(attr => `data-${attr[0]}="${attr[1]}"`).join(" ");
 		bodyContent = `<div id="greetmaster-midi-placeholder" ${midiAttrString}></div>\n` + newBodyContent + bodyContent;
 	}
+	bodyContent = bodyContent.replaceAll(/(<object)(\s+[^>]+>)(.*?)\s*<embed(\s+[^>]+)(?:>?<\/embed>|\/>)/gis, (...segments) =>
+		segments[1] +
+		segments[4].replace(/(\s)src=\"/i, `$1data="`) +
+		segments[2] +
+		segments[3].replace(/\s*<param name="BGColor" value="[^"]+"(?: \/)?>/is, "")
+	);
 	if (greeting.types[0] == "CreataMail Template")
-		bodyContent = bodyContent.replaceAll(/ contenteditable="(?:true|false)"/g, "");
+		bodyContent = bodyContent.replaceAll(/ contenteditable="(?:true|false)"/g, "").replaceAll(/ unselectable="(?:on|off)"/g, "");
 	else if (greeting.types[0] == "Animated Text E-Card")
 		bodyContent = bodyContent.replace(/\[Mamboline1\]\s*\[Mamboline2\]\s*\[Mamboline3\]/, "[Mambo]<br>");
 	if (params.get("embed") == "true") {
