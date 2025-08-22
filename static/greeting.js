@@ -136,26 +136,44 @@ function loadScript(url) {
 	return new Promise(resolve => script.addEventListener("load", resolve));
 }
 
-async function prepareMidi(greetingContent, greetingOverlay) {
+async function prepareAudio(greetingContent, greetingOverlay) {
 	if (!window.isSecureContext) return;
-	const midiPlaceholder = greetingContent.querySelector("#greetmaster-midi-placeholder");
-	if (midiPlaceholder === null) return;
-	const spessasynth = await import("./midi/spessasynth_lib.min.js");
-	const soundfont = await (await fetch("./midi/gm.dls")).arrayBuffer();
-	const midi = await (await fetch(midiPlaceholder.dataset.src)).arrayBuffer();
-	const audioContext = new AudioContext();
-	await audioContext.audioWorklet.addModule("./midi/worklet_processor.min.js");
-	greetingOverlay.addEventListener("click", () => {
-		const synthesizer = new spessasynth.Synthetizer(audioContext.destination, soundfont);
-		synthesizer.setMainVolume(2);
-		synthesizer.setEffectsGain(0, 0);
-		const sequencer = new spessasynth.Sequencer([{ binary: midi }], synthesizer, { autoPlay: false });
-		const midiLoop = parseInt(midiPlaceholder.dataset.loop);
-		sequencer.loop = midiLoop != 0;
-		sequencer.loopsRemaining = midiLoop;
-		sequencer.play();
-	});
-	midiPlaceholder.remove();
+	const audioPlaceholder = greetingContent.querySelector("#greetmaster-audio-placeholder");
+	if (audioPlaceholder === null) return;
+	const audioLoop = parseInt(audioPlaceholder.dataset.loop);
+	if (audioPlaceholder.dataset.src.endsWith(".mid")) {
+		const spessasynth = await import("./midi/spessasynth_lib.min.js");
+		const soundfont = await (await fetch("./midi/gm.dls")).arrayBuffer();
+		const midi = await (await fetch(audioPlaceholder.dataset.src)).arrayBuffer();
+		const audioContext = new AudioContext();
+		await audioContext.audioWorklet.addModule("./midi/worklet_processor.min.js");
+		greetingOverlay.addEventListener("click", () => {
+			const synthesizer = new spessasynth.Synthetizer(audioContext.destination, soundfont);
+			synthesizer.setMainVolume(2);
+			synthesizer.setEffectsGain(0, 0);
+			const sequencer = new spessasynth.Sequencer([{ binary: midi }], synthesizer, { autoPlay: false });
+			sequencer.loop = audioLoop != 0;
+			sequencer.loopsRemaining = audioLoop;
+			sequencer.play();
+		});
+	}
+	else {
+		const audio = new Audio(audioPlaceholder.dataset.src);
+		audio.loop = audioLoop == -1;
+		greetingOverlay.addEventListener("click", () => {
+			audio.play();
+			if (audioLoop > 0) {
+				let loopsRemaining = audioLoop;
+				audio.addEventListener("ended", () => {
+					if (loopsRemaining > 0) {
+						audio.play();
+						loopsRemaining--;
+					}
+				});
+			}
+		});
+	}
+	audioPlaceholder.remove();
 }
 
 async function prepareFlash(greetingContent, greetingOverlay) {
@@ -244,7 +262,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	else
 		greetingContent.parentElement.classList.add("greetmaster-greeting-min-size");
 	prepareEditableContent(greetingContent);
-	await prepareMidi(greetingContent, greetingOverlay);
+	await prepareAudio(greetingContent, greetingOverlay);
 	await prepareFlash(greetingContent, greetingOverlay);
 	await prepareEmu(greetingContent, greetingOverlay);
 	if (["Image E-Card", "Wallpaper Preview", "Screensaver Preview"].some(type => type == greetingContent.dataset.type))

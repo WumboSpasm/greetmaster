@@ -415,26 +415,27 @@ function preparePage(greeting, params) {
 	}
 	const embedExp = /\s*(<(?:embed|bgsound|noembed>\s*<bgsound)[^>]+>)(?:\s*<\/(?:no)?embed>)?/gi;
 	const embedRanges = [];
-	const midiAttrs = { src: "", loop: "-1" };
+	const audioAttrs = { src: "", loop: "-1" };
 	let acquiredAttrs = false;
 	for (let embedMatch; (embedMatch = embedExp.exec(bodyContent)) !== null;) {
 		const embedTag = embedMatch[1];
-		if (!acquiredAttrs) {
-			for (let attrMatch; (attrMatch = attrExp.exec(embedTag)) !== null;) {
-				const [field, value] = [attrMatch[1].toLowerCase(), trimString(attrMatch[2])];
-				if ((field == "src" || field == "bgsound") && value.toLowerCase().endsWith(".mid"))
-					midiAttrs.src = value;
-				else if (field == "loop") {
-					const valueLower = value.toLowerCase();
-					if (valueLower == "false" || valueLower == "no")
-						midiAttrs.loop = "0";
-					else if (!isNaN(valueLower))
-						midiAttrs.loop = valueLower;
+		for (let attrMatch; (attrMatch = attrExp.exec(embedTag)) !== null;) {
+			const [field, value] = [attrMatch[1].toLowerCase(), trimString(attrMatch[2])];
+			if ((field == "src" || field == "bgsound") && /\.(?:mid|mp3|wav)$/i.test(value)) {
+				if (audioAttrs.src == "") {
+					audioAttrs.src = value;
+					acquiredAttrs = true;
 				}
+				embedRanges.push([embedMatch.index, embedMatch.index + embedMatch[0].length]);
+			}
+			else if (field == "loop") {
+				const valueLower = value.toLowerCase();
+				if (valueLower == "false" || valueLower == "no")
+					audioAttrs.loop = "0";
+				else if (!isNaN(valueLower))
+					audioAttrs.loop = valueLower;
 			}
 		}
-		if (midiAttrs.src != "") acquiredAttrs = true;
-		embedRanges.push([embedMatch.index, embedMatch.index + embedMatch[0].length]);
 	}
 	if (acquiredAttrs && embedRanges.length > 0) {
 		let offset = 0;
@@ -444,8 +445,8 @@ function preparePage(greeting, params) {
 			bodyContent = bodyContent.substring(end - offset);
 			offset = end;
 		}
-		const midiAttrString = Object.entries(midiAttrs).map(attr => `data-${attr[0]}="${attr[1]}"`).join(" ");
-		bodyContent = `<div id="greetmaster-midi-placeholder" ${midiAttrString}></div>\n` + newBodyContent + bodyContent;
+		const audioAttrString = Object.entries(audioAttrs).map(attr => `data-${attr[0]}="${attr[1]}"`).join(" ");
+		bodyContent = `<div id="greetmaster-audio-placeholder" ${audioAttrString}></div>\n` + newBodyContent + bodyContent;
 	}
 	bodyContent = bodyContent.replaceAll(/(<object)(\s+[^>]+>)(.*?)\s*<embed(\s+[^>]+)(?:>?<\/embed>|\/>)/gis, (...segments) =>
 		segments[1] +
