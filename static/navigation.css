@@ -1,8 +1,8 @@
 :root {
-	--greetmaster-sidebar-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 7' fill='%23fff'><path d='m0,0l8,0l0,1l-8,0zm0,3l8,0l0,1l-8,0zm0,3l8,0l0,1l-8,0z'/></svg>");
-	--greetmaster-expand-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%23fff' viewBox='0 0 16 16'><path d='M8,13L2,6H14Z'/></svg>");
-	--greetmaster-collapse-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%23fff' viewBox='0 0 16 16'><path d='M8,5L2,12H14Z'/></svg>");
-	--greetmaster-remove-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 10' fill='%23fff'><path d='m1,2l-1,1l3,3l-3,3l1,1l3,-3l3,3l1,-1l-3,-3l3,-3l-1,-1l-3,3z'/></svg>");
+	--greetmaster-sidebar-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 7" fill="%23fff"><path d="m0,0l8,0l0,1l-8,0zm0,3l8,0l0,1l-8,0zm0,3l8,0l0,1l-8,0z"/></svg>');
+	--greetmaster-expand-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%23fff" viewBox="0 0 16 16"><path d="M8,13L2,6H14Z"/></svg>');
+	--greetmaster-collapse-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%23fff" viewBox="0 0 16 16"><path d="M8,5L2,12H14Z"/></svg>');
+	--greetmaster-remove-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 10" fill="%23fff"><path d="m1,2l-1,1l3,3l-3,3l1,1l3,-3l3,3l1,-1l-3,-3l3,-3l-1,-1l-3,3z"/></svg>');
 }
 
 /* Navbar */
@@ -48,7 +48,7 @@
 	background-color: var(--greetmaster-background-color-2);
 }
 .greetmaster-logo a {
-	font-family: "Times New Roman", serif;
+	font-family: 'Times New Roman', serif;
 	font-size: 32px;
 	padding: 0 6px 2px;
 }

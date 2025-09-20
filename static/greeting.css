@@ -73,7 +73,7 @@
 	gap: 6px;
 }
 .greetmaster-greeting-download-links > .greetmaster-greeting-options-button:not(:last-child):after {
-	content: ",";
+	content: ',';
 }
 .greetmaster-greeting-options-caption {
 	color: #fffd;
@@ -123,19 +123,19 @@
 #greetmaster-html-container #agi-asset {
 	text-align: center;
 }
-#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="CreataMail Template"] {
+#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type='CreataMail Template'] {
 	min-height: 480px;
 	padding: 0;
 	overflow: hidden;
 }
-#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="CreataMail Template"] > div {
+#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type='CreataMail Template'] > div {
 	z-index: 0;
 	box-sizing: border-box;
 }
-#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="CreataMail Template"] div:has(> table) {
+#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type='CreataMail Template'] div:has(> table) {
 	box-sizing: border-box;
 }
-.greetmaster-greeting-min-size:has(#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type="Animated Text E-Card"]) {
+.greetmaster-greeting-min-size:has(#greetmaster-html-container:not(.greetmaster-greeting-hidden)[data-type='Animated Text E-Card']) {
 	min-width: 768px !important;
 }
 #greetmaster-emu-placeholder {
