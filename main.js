@@ -85,6 +85,10 @@ const serverHandler = (request, info) => {
 	// Get body of request URL
 	let requestPath = requestUrl.pathname.replace(/^[/]+/, '');
 
+	// Initialize response headers
+	const headers = new Headers();
+	headers.set('Cache-Control', 'max-age=14400');
+
 	// Get values of query string
 	const params = requestUrl.searchParams;
 
@@ -209,7 +213,8 @@ const serverHandler = (request, info) => {
 						: '',
 					'CONTENT': mainVars['CONTENT'],
 				});
-			return new Response(buildHtml(templates.main, mainVars), { headers: { 'Content-Type': 'text/html; charset=UTF-8' } });
+			headers.set('Content-Type', 'text/html; charset=UTF-8');
+			return new Response(buildHtml(templates.main, mainVars), { headers: headers });
 		}
 		case 'get': {
 			const fields = ['titles', 'categories', 'sources', 'types', 'htmlPath', 'contentPath', 'thumbnailPath'];
@@ -248,11 +253,13 @@ const serverHandler = (request, info) => {
 					}
 				}
 			}
-			return new Response(JSON.stringify(greetingList), { headers: { 'Content-Type': 'application/json; charset=UTF-8' } });
+			headers.set('Content-Type', 'application/json; charset=UTF-8');
+			return new Response(JSON.stringify(greetingList), { headers: headers });
 		}
 		case 'stats': {
 			const statsList = params.toString() == '' ? globalStats : getStats(params);
-			return new Response(JSON.stringify(statsList), { headers: { 'Content-Type': 'application/json; charset=UTF-8' } });
+			headers.set('Content-Type', 'application/json; charset=UTF-8');
+			return new Response(JSON.stringify(statsList), { headers: headers });
 		}
 		case 'random': {
 			const randomList = [];
@@ -268,8 +275,8 @@ const serverHandler = (request, info) => {
 		default: {
 			if (!requestPath.startsWith('data/')) requestPath = `static/${requestPath}`;
 			if (!getPathInfo(requestPath)?.isFile) throw new NotFoundError();
-			const responseType = contentType(requestPath.substring(requestPath.lastIndexOf('.'))) ?? 'application/octet-stream';
-			return new Response(Deno.openSync(requestPath).readable, { headers: { 'Content-Type': responseType }});
+			headers.set('Content-Type', contentType(requestPath.substring(requestPath.lastIndexOf('.'))) ?? 'application/octet-stream');
+			return new Response(Deno.openSync(requestPath).readable, { headers: headers});
 		}
 	}
 };
