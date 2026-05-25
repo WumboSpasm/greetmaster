@@ -15,6 +15,7 @@ const config = {
 	logFile: 'server.log',
 	logToConsole: true,
 	logBlockedRequests: true,
+	upgradeHttpRequests: false,
 };
 
 // Store template HTML data in memory
@@ -57,8 +58,32 @@ const statTitles = Object.values(greetings).reduce((statTitles, greeting) => {
 	return statTitles;
 }, {});
 
+// Start the server
+let httpServer, httpsServer;
+(function startServer() {
+	// ...over HTTP
+	if (config.httpPort)
+		httpServer = Deno.serve({
+			port: config.httpPort,
+			hostname: config.hostName,
+			onListen: serverListen,
+			onError: serverError,
+		}, serverHandler);
+
+	// ...over HTTPS
+	if (config.httpsPort && config.httpsCert && config.httpsKey)
+		httpsServer = Deno.serve({
+			port: config.httpsPort,
+			cert: Deno.readTextFileSync(config.httpsCert),
+			key: Deno.readTextFileSync(config.httpsKey),
+			hostName: config.hostName,
+			onListen: serverListen,
+			onError: serverError,
+		}, serverHandler);
+})();
+
 // Handle server requests
-const serverHandler = (request, info) => {
+function serverHandler(request, info) {
 	const ipAddress = info.remoteAddr.hostname;
 	const userAgent = request.headers.get('User-Agent') ?? '';
 
@@ -81,6 +106,12 @@ const serverHandler = (request, info) => {
 	// If access host is configured, do not allow connections through any other hostname
 	if (config.accessHosts.length > 0 && !config.accessHosts.some(host => host == requestUrl.hostname))
 		throw new BadRequestError();
+
+	// Upgrade HTTP requests to HTTPS if configured to do so
+	if (requestUrl.protocol == 'http:' && config.upgradeHttpRequests && httpsServer) {
+		requestUrl.protocol = 'https:';
+		Response.redirect(requestUrl);
+	}
 
 	// Get body of request URL
 	let requestPath = requestUrl.pathname.replace(/^[/]+/, '');
@@ -279,10 +310,15 @@ const serverHandler = (request, info) => {
 			return new Response(Deno.openSync(requestPath).readable, { headers: headers});
 		}
 	}
-};
+}
+
+// Log when the server begins listening on a port
+function serverListen(addr) {
+	logMessage(`listening on http${addr.port == config.httpsPort ? 's' : ''}://${addr.hostname}:${addr.port}/`);
+}
 
 // Display error page
-const serverError = (error) => {
+function serverError(error) {
 	const [badRequest, notFound] = [error instanceof BadRequestError, error instanceof NotFoundError];
 	let errorPage = templates.error;
 	if (badRequest || notFound)
@@ -298,23 +334,22 @@ const serverError = (error) => {
 		});
 	}
 	return new Response(errorPage, { status: error.status ?? 500, headers: { 'Content-Type': 'text/html; charset=UTF-8' } });
-};
+}
 
-// Start server on HTTP and/or HTTPS
-if (config.httpPort)
-	Deno.serve({
-		port: config.httpPort,
-		hostname: config.hostName,
-		onError: serverError,
-	}, serverHandler);
-if (config.httpsPort && config.httpsCert && config.httpsKey)
-	Deno.serve({
-		port: config.httpsPort,
-		cert: Deno.readTextFileSync(config.httpsCert),
-		key: Deno.readTextFileSync(config.httpsKey),
-		hostName: config.hostName,
-		onError: serverError,
-	}, serverHandler);
+// Close the server gracefully when a SIGINT signal is received
+async function serverShutdown() {
+	if (httpServer) {
+		logMessage('shutting down server on HTTP...');
+		await httpServer.shutdown();
+	}
+	if (httpsServer) {
+		logMessage('shutting down server on HTTPS...');
+		httpsServer.shutdown();
+	}
+
+	Deno.exit();
+}
+Deno.addSignalListener('SIGINT', serverShutdown);
 
 // Get page content as UTF-encoded string
 function getPage(greeting) {
