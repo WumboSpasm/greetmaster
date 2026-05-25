@@ -110,7 +110,8 @@ function serverHandler(request, info) {
 	// Upgrade HTTP requests to HTTPS if configured to do so
 	if (requestUrl.protocol == 'http:' && config.upgradeHttpRequests && httpsServer) {
 		requestUrl.protocol = 'https:';
-		Response.redirect(requestUrl);
+		requestUrl.port = 443;
+		return Response.redirect(requestUrl, 301);
 	}
 
 	// Get body of request URL
